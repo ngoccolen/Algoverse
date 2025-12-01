@@ -1,0 +1,148 @@
+.explore-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding-bottom: 60px;
+}
+
+/* HEADER */
+.explore-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px 80px 40px;
+  flex-wrap: wrap;
+}
+.header-left h1 {
+  font-size: 36px;
+  font-weight: 700;
+}
+.header-left p {
+  font-size: 16px;
+  color: #cbd5e1;
+  margin-top: 6px;
+}
+.stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 20px;
+}
+.stats strong {
+  font-size: 22px;
+  color: #38bdf8;
+}
+.header-right img {
+  width: 220px;
+  filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.4));
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+.tabs button {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.tabs button.active {
+  color: #38bdf8;
+  border-bottom: 3px solid #38bdf8;
+}
+.tabs button:hover {
+  color: #e2e8f0;
+}
+
+/* FILTERS */
+.explore-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 30px 80px 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.explore-filters input {
+  flex: 1;
+  min-width: 220px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #e2e8f0;
+}
+.filter-selects select {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-left: 8px;
+}
+
+/* GRID */
+.explore-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin: 20px 80px;
+}
+
+/* CARD */
+.module-card {
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(56, 189, 248, 0.25);
+}
+.icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+.progress {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  margin: 10px 0;
+}
+.progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 999px;
+}
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 0;
+  width: 100%;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.btn-primary:hover {
+  background: #2563eb;
+}
+.bg-gradient-custom {
+  background-image: linear-gradient(
+    to bottom,
+    #6A5ACD, /* Màu Tím Slate (Slate Blue) hoặc #8A2BE2 (Blue Violet) */
+    #A020F0  /* Màu Tím (Purple) */
+    #9932CC  /* Màu Tím Đậm Vừa (Medium Orchid) */
+  );
+}
