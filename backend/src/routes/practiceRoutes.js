@@ -1,21 +1,25 @@
 const express = require("express");
 const router = express.Router();
-const practiceController = require("../controller/practiceController"); // Đảm bảo đường dẫn đúng
-const { verifyToken } = require("../middleware/authMiddleware"); // Đảm bảo middleware đúng
+const practiceController = require("../controller/practiceController"); 
+const { verifyToken } = require("../middleware/authMiddleware"); 
+
+// --- THÊM DÒNG NÀY ĐỂ IMPORT CONTEST CONTROLLER ---
+const contestController = require("../controller/ContestController"); 
 
 // 1. Lấy danh sách bài tập
 router.get("/problems", verifyToken, practiceController.getAllProblems);
 
-// 2. Lấy chi tiết 1 bài tập (kèm test case public)
+// 2. Lấy chi tiết 1 bài tập
 router.get("/problems/:id", verifyToken, practiceController.getProblemById);
 
-// 3. Nộp bài / Chấm điểm (Run & Submit)
+// 3. Nộp bài
 router.post("/submit/:id", verifyToken, practiceController.submitSolution);
 
-// 4. Lấy lịch sử nộp bài
+// 4. Lịch sử
 router.get("/history/:id", verifyToken, practiceController.getSubmissionHistory);
 
-// === XÓA CÁC ROUTE CŨ KHÔNG CÒN DÙNG (VÍ DỤ GAME) ===
-// router.get("/games", ...);  <-- Xóa dòng này nếu còn
+// 5. Chạy thử code (SỬA LẠI DÒNG NÀY)
+// Thay 'authMiddleware' thành 'verifyToken' (vì bạn đã import nó ở trên)
+router.post('/run', verifyToken, contestController.runContestCode);
 
 module.exports = router;

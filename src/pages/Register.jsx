@@ -110,8 +110,8 @@ localStorage.setItem("accessToken", res.data.accessToken);
                     <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center">
                       <UserPlus className="w-10 h-10 text-white" />
                     </div>
-                    <h2 className="text-3xl font-bold text-white text-center">Join Us Today!</h2>
-                    <p className="text-white/80 text-center text-sm">Create your account and start your amazing journey</p>
+                    <h2 className="text-3xl font-bold text-white text-center">Tham gia với chúng tôi ngay!</h2>
+                    <p className="text-white/80 text-center text-sm">Tạo tài khoản và bắt đầu 1 hành trình đầy thú vị</p>
                 </div>
               </motion.div>
             </motion.div>
@@ -124,16 +124,16 @@ localStorage.setItem("accessToken", res.data.accessToken);
               className="p-8 md:p-12 flex flex-col justify-center"
             >
               <div className="mb-8">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">Create Account</h1>
-                <p className="text-gray-600">Fill in your details to get started</p>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">Tạo tài khoản</h1>
+                <p className="text-gray-600">Nhập đầy đủ thông tin để đăng ký tài khoản</p>
               </div>
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tên đăng nhập</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Choose a username" className={`w-full pl-12 pr-4 py-3 bg-gray-50 border-2 ${errors.username ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Gõ tên đăng nhập" className={`w-full pl-12 pr-4 py-3 bg-gray-50 border-2 ${errors.username ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
                   </div>
                   {errors.username && <p className="text-red-500 text-sm mt-2">{errors.username}</p>}
                 </div>
@@ -142,16 +142,16 @@ localStorage.setItem("accessToken", res.data.accessToken);
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" className={`w-full pl-12 pr-4 py-3 bg-gray-50 border-2 ${errors.email ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Nhập email của bạn" className={`w-full pl-12 pr-4 py-3 bg-gray-50 border-2 ${errors.email ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
                   </div>
                   {errors.email && <p className="text-red-500 text-sm mt-2">{errors.email}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Create a password" className={`w-full pl-12 pr-12 py-3 bg-gray-50 border-2 ${errors.password ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Tạo mật khẩu" className={`w-full pl-12 pr-12 py-3 bg-gray-50 border-2 ${errors.password ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-purple-600 transition-colors">
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -160,10 +160,10 @@ localStorage.setItem("accessToken", res.data.accessToken);
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Xác nhận mật khẩu</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter password" className={`w-full pl-12 pr-12 py-3 bg-gray-50 border-2 ${errors.confirmPassword ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
+                    <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Xác nhận mật khẩu" className={`w-full pl-12 pr-12 py-3 bg-gray-50 border-2 ${errors.confirmPassword ? "border-red-400" : "border-gray-200"} rounded-xl focus:border-purple-500 focus:bg-white outline-none transition-all duration-200`} />
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-purple-600 transition-colors">
                       {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -179,11 +179,11 @@ localStorage.setItem("accessToken", res.data.accessToken);
               )}
 
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleRegister} disabled={loading} className="w-full mt-6 py-3 rounded-xl text-white font-bold text-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed">
-                {loading ? "Processing..." : "Create Account"}
+                {loading ? "Processing..." : "Tạo tài khoản"}
               </motion.button>
 
               <p className="text-center text-gray-600 mt-6">
-                Already have an account? <Link to="/login" className="text-purple-600 font-bold hover:underline">Login</Link>
+                Đã có tài khoản? <Link to="/login" className="text-purple-600 font-bold hover:underline">Đăng nhập</Link>
               </p>
             </motion.div>
           </div>

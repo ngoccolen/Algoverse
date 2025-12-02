@@ -152,12 +152,13 @@ exports.submitSolution = async (req, res) => {
     if (!runOnly) {
         try {
             // [FIX 3]: Dùng cột 'exercise_id' (theo database của bạn) thay vì problem_id
-            await db.execute(
-                `INSERT INTO submissions 
-                (user_id, exercise_id, language_id, source_code, status, passed_cases, total_cases, time_taken, memory_used, submitted_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-                [userId, id, languageId, source, finalStatus, passed, testCases.length, maxTime, maxMemory]
-            );
+            // [SỬA LẠI ĐOẠN INSERT]
+await db.execute(
+    `INSERT INTO submissions 
+    (user_id, problem_id, language_id, source_code, status, passed_cases, total_cases, time_taken, memory_used, submitted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`, // Lưu ý: Bỏ cột exercise_id, thay bằng problem_id
+    [userId, id, languageId, source, finalStatus, passed, testCases.length, maxTime, maxMemory]
+);
 
             // Update thống kê bài tập
             await db.execute(`UPDATE problems SET total_submissions = total_submissions + 1 WHERE id = ?`, [id]);

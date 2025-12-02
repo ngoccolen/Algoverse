@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Home, Compass, Code2, Trophy, Users, Search,
+  Home, Compass, Code2, Trophy, Users, 
   Menu, X, ChevronRight, Zap, LogOut, User as UserIcon
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -9,7 +9,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
   
   // State quản lý User
   const [user, setUser] = useState(null);
@@ -18,7 +17,6 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Kiểm tra scroll để đổi màu navbar
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -27,7 +25,6 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Kiểm tra user đăng nhập từ localStorage
   useEffect(() => {
     const checkUser = () => {
       const storedUser = localStorage.getItem("user");
@@ -37,19 +34,14 @@ const Navbar = () => {
         setUser(null);
       }
     };
-
     checkUser();
-
-    // Lắng nghe sự kiện storage (để cập nhật ngay khi login/register xong)
     window.addEventListener("storage", checkUser);
     return () => window.removeEventListener("storage", checkUser);
   }, []);
 
   const handleLogout = () => {
-    // --- SỬA Ở ĐÂY: Dùng đúng key "accessToken" để xóa sạch sẽ ---
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
-    
     setUser(null);
     setShowProfileMenu(false);
     navigate("/login");
@@ -75,37 +67,35 @@ const Navbar = () => {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`flex items-center justify-between ${isScrolled ? 'h-16' : 'h-20'}`}>
+          {/* Container chính: relative để căn giữa menu */}
+          <div className={`relative flex items-center justify-between ${isScrolled ? 'h-16' : 'h-20'}`}>
 
-            {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2 cursor-pointer group">
+            {/* 1. LOGO */}
+            <Link to="/" className="flex items-center gap-2 cursor-pointer group z-10 shrink-0">
               <motion.div 
                 className="relative"
                 whileHover={{ rotate: 180 }}
                 transition={{ duration: 0.6, ease: "easeInOut" }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-lg blur-sm opacity-75"></div>
-                <div className="relative bg-gradient-to-br from-cyan-500 to-purple-600 p-2 rounded-lg">
-                  <Zap className="w-6 h-6 text-white" />
+                <div className="relative bg-gradient-to-br from-cyan-500 to-purple-600 p-1.5 rounded-lg">
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
               </motion.div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Algoverse
-                </span>
-                <span className="text-[10px] text-slate-400 -mt-1">LEARN • CODE • COMPETE</span>
-              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent whitespace-nowrap">
+                Algoverse
+              </span>
             </Link>
 
-            {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center space-x-1">
+            {/* 2. MENU CENTER (Căn giữa & Không xuống dòng) */}
+            <div className="hidden lg:flex items-center space-x-1 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const active = location.pathname === item.id;
                 return (
                   <Link key={item.id} to={item.id}>
                     <motion.div
-                      className="relative px-4 py-2 rounded-lg group cursor-pointer"
+                      className="relative px-3 py-2 rounded-lg group cursor-pointer flex items-center gap-2"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -116,42 +106,31 @@ const Navbar = () => {
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
-                      <div className="relative flex items-center space-x-2">
-                        <Icon className={`w-4 h-4 ${active ? 'text-cyan-400' : 'text-slate-400'}`} />
-                        <span className={`text-sm font-medium ${active ? 'text-white' : 'text-slate-300'}`}>
-                          {item.label}
-                        </span>
-                      </div>
+                      
+                      {/* Icon */}
+                      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      
+                      {/* Text: Thêm whitespace-nowrap để bắt buộc 1 dòng */}
+                      <span className={`text-sm font-medium whitespace-nowrap ${active ? 'text-white' : 'text-slate-300'}`}>
+                        {item.label}
+                      </span>
                     </motion.div>
                   </Link>
                 );
               })}
             </div>
 
-            {/* Right Side: Search & Auth */}
-            <div className="hidden lg:flex items-center space-x-4">
-              <motion.div animate={{ width: searchFocused ? 280 : 200 }} className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm..."
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                />
-              </motion.div>
-
-              {/* LOGIC HIỂN THỊ USER HOẶC NÚT LOGIN */}
+            {/* 3. RIGHT SIDE */}
+            <div className="hidden lg:flex items-center space-x-4 z-10 shrink-0">
               {user ? (
                 <div className="relative">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center space-x-3 bg-slate-800/50 border border-white/10 rounded-full pl-1 pr-4 py-1"
+                    className="flex items-center space-x-3 bg-slate-800/50 border border-white/10 rounded-full pl-1 pr-4 py-1 whitespace-nowrap"
                   >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 p-[1px] overflow-hidden">
                       <img 
-                        // Ưu tiên avatar user -> Nếu không có thì dùng UI Avatars -> Cuối cùng fallback ảnh rỗng
                         src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}&background=random`} 
                         alt="User" 
                         className="w-full h-full rounded-full bg-slate-900 object-cover"
@@ -162,7 +141,6 @@ const Navbar = () => {
                     </span>
                   </motion.button>
 
-                  {/* Dropdown Menu */}
                   <AnimatePresence>
                     {showProfileMenu && (
                       <motion.div
@@ -191,7 +169,7 @@ const Navbar = () => {
                   <motion.button 
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="relative group overflow-hidden px-6 py-2.5 rounded-lg text-white"
+                    className="relative group overflow-hidden px-6 py-2.5 rounded-lg text-white whitespace-nowrap"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500"></div>
                     <span className="relative flex items-center space-x-2">
@@ -203,11 +181,11 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Toggle */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg bg-slate-800/50"
+              className="lg:hidden p-2 rounded-lg bg-slate-800/50 z-10"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6 text-slate-300" /> : <Menu className="w-6 h-6 text-slate-300" />}
             </motion.button>
@@ -241,7 +219,6 @@ const Navbar = () => {
                   </button>
                 </div>
 
-                {/* Mobile User Info */}
                 {user ? (
                   <div className="mb-8 p-4 bg-slate-800/50 rounded-xl flex items-center space-x-3">
                      <img 

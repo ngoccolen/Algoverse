@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Trophy, Clock, Database, CheckCircle, Search, 
+  Trophy, Clock, CheckCircle, Search, 
   ChevronRight, Calendar, Code, AlertCircle, 
-  RotateCcw, Play, Globe, Target, Flame, Crown, Timer, Zap, UserPlus, List
+  RotateCcw, Play, Globe, List, Crown, Zap, UserPlus,
+  Loader2, Terminal, Send // Import thêm icon mới
 } from 'lucide-react';
 
 // -----------------------------
-// 1. CSS Styles cho hiển thị đề bài HTML (Giữ nguyên)
+// 1. CSS Styles cho hiển thị đề bài HTML
 // -----------------------------
 const CF_STYLES = `
   .cf-problem-content { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #222; font-size: 15px; line-height: 1.5; }
@@ -26,7 +27,7 @@ const CF_STYLES = `
 // 2. Cấu hình & Helper
 // -----------------------------
 const statusConfig = { 
-  ongoing: { label: 'Đang diễn ra', color: 'bg-green-500 text-white', icon: Flame }, 
+  ongoing: { label: 'Đang diễn ra', color: 'bg-green-500 text-white', icon: Zap }, 
   upcoming: { label: 'Sắp diễn ra', color: 'bg-blue-500 text-white', icon: Clock }, 
   finished: { label: 'Đã kết thúc', color: 'bg-gray-500 text-white', icon: CheckCircle } 
 };
@@ -96,13 +97,17 @@ const ContestDetail = ({ contest, onBack }) => {
   const [problemsList, setProblemsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State Editor
+  // State Editor & Submission
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('cpp');
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
+  const [submitResult, setSubmitResult] = useState(null);
 
-  // --- EFFECT 1: Check Registration & Inject Styles ---
+  // State Run Code (Mới)
+  const [isRunning, setIsRunning] = useState(false);
+  const [runResult, setRunResult] = useState(null);
+
+  // --- EFFECT: Check Registration & Inject Styles ---
   useEffect(() => {
     const styleSheet = document.createElement("style");
     styleSheet.innerText = CF_STYLES;
@@ -125,7 +130,7 @@ const ContestDetail = ({ contest, onBack }) => {
         setCheckingReg(false);
     }
 
-    // 2. Load danh sách bài (nếu cần hiển thị preview)
+    // 2. Load danh sách bài
     fetch(`http://localhost:5000/api/contests/${contest.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -136,7 +141,7 @@ const ContestDetail = ({ contest, onBack }) => {
     return () => document.head.removeChild(styleSheet);
   }, [contest.id]);
 
-  // --- EFFECT 2: Load Leaderboard khi chuyển tab ---
+  // --- EFFECT: Load Leaderboard ---
   useEffect(() => {
       if(activeTab === 'leaderboard') {
           fetch(`http://localhost:5000/api/contests/${contest.id}/leaderboard`)
@@ -145,7 +150,7 @@ const ContestDetail = ({ contest, onBack }) => {
       }
   }, [activeTab, contest.id]);
 
-  // --- HANDLER: Đăng ký tham gia ---
+  // --- HANDLER: Đăng ký ---
   const handleRegister = async () => {
       const token = localStorage.getItem("accessToken");
       if(!token) return alert("Vui lòng đăng nhập để đăng ký!");
@@ -153,15 +158,12 @@ const ContestDetail = ({ contest, onBack }) => {
       try {
         const res = await fetch('http://localhost:5000/api/contests/register', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ contestId: contest.id })
         });
         const data = await res.json();
         if(data.success) {
-            alert("Đăng ký thành công! Chúc bạn thi tốt.");
+            alert("Đăng ký thành công!");
             setIsRegistered(true);
         } else {
             alert(data.message);
@@ -169,13 +171,44 @@ const ContestDetail = ({ contest, onBack }) => {
       } catch(e) { alert("Lỗi kết nối!"); }
   };
 
-  // --- HANDLER: Nộp bài ---
+  // --- HANDLER: Chạy Thử Code (Mới) ---
+  const handleRunCode = async () => {
+    if (!code.trim()) return alert("Vui lòng nhập code!");
+    setIsRunning(true);
+    setRunResult(null); // Reset kết quả cũ
+    setSubmitResult(null); // Ẩn kết quả nộp bài đi để đỡ rối
+
+    const token = localStorage.getItem("accessToken");
+    try {
+        const res = await fetch(`http://localhost:5000/api/contests/run`, {
+            method: 'POST',
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                problemId: activeProblem.id, 
+                language: language, 
+                source: code 
+            })
+        });
+        const data = await res.json();
+        setRunResult(data);
+    } catch (err) {
+        alert("Lỗi kết nối server khi chạy thử!");
+    } finally {
+        setIsRunning(false);
+    }
+  };
+
+  // --- HANDLER: Nộp Bài ---
   const handleSubmit = async () => {
     if (!code.trim()) return alert("Vui lòng nhập code!");
     setSubmitting(true);
-    setResult(null);
-    const token = localStorage.getItem("accessToken");
+    setSubmitResult(null);
+    setRunResult(null); // Ẩn kết quả chạy thử đi
 
+    const token = localStorage.getItem("accessToken");
     try {
       const res = await fetch('http://localhost:5000/api/submissions/submit', {
         method: 'POST',
@@ -183,7 +216,7 @@ const ContestDetail = ({ contest, onBack }) => {
         body: JSON.stringify({ problemId: activeProblem.id, language, source: code, contestId: contest.id })
       });
       const data = await res.json();
-      setResult(data);
+      setSubmitResult(data);
     } catch (error) { alert("Lỗi kết nối server!"); } 
     finally { setSubmitting(false); }
   };
@@ -195,43 +228,16 @@ const ContestDetail = ({ contest, onBack }) => {
       return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto mt-10">
             <button onClick={onBack} className="mb-6 text-gray-500 hover:text-blue-600 flex items-center gap-2 font-bold">← Quay lại</button>
-            
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
                 <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-10 text-center text-white relative overflow-hidden">
                     <Trophy size={120} className="mx-auto text-yellow-400 mb-6 drop-shadow-lg animate-bounce-slow"/>
                     <h1 className="text-4xl font-black mb-4">{contest.title}</h1>
-                    <p className="text-blue-200 text-lg max-w-2xl mx-auto">{contest.description || "Hãy tham gia để thử thách kỹ năng lập trình của bạn!"}</p>
-                    
-                    {/* Background decorations */}
-                    <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    <p className="text-blue-200 text-lg max-w-2xl mx-auto">{contest.description}</p>
                 </div>
-
                 <div className="p-10 text-center">
-                    <div className="grid grid-cols-3 gap-6 mb-10 max-w-2xl mx-auto">
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <Calendar className="mx-auto text-blue-500 mb-2"/>
-                            <div className="font-bold text-slate-700">Ngày bắt đầu</div>
-                            <div className="text-sm text-slate-500">{new Date(contest.startTime).toLocaleDateString('vi-VN')}</div>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <Clock className="mx-auto text-purple-500 mb-2"/>
-                            <div className="font-bold text-slate-700">Thời gian</div>
-                            <div className="text-sm text-slate-500">120 Phút</div>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <Globe className="mx-auto text-green-500 mb-2"/>
-                            <div className="font-bold text-slate-700">Nguồn</div>
-                            <div className="text-sm text-slate-500 uppercase">{contest.source}</div>
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={handleRegister}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold text-xl shadow-xl shadow-blue-200 transition transform hover:scale-105 flex items-center gap-3 mx-auto"
-                    >
+                    <button onClick={handleRegister} className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold text-xl shadow-xl flex items-center gap-3 mx-auto transition transform hover:scale-105">
                         <UserPlus size={24}/> Đăng Ký Tham Gia Ngay
                     </button>
-                    <p className="text-slate-400 mt-4 text-sm">Bạn cần đăng nhập để đăng ký tham gia.</p>
                 </div>
             </div>
         </motion.div>
@@ -239,7 +245,7 @@ const ContestDetail = ({ contest, onBack }) => {
   }
 
   // ==========================================
-  // VIEW 2: MÀN HÌNH LÀM BÀI (Problem Detail)
+  // VIEW 2: MÀN HÌNH LÀM BÀI (Problem Detail + Editor)
   // ==========================================
   if (activeProblem) {
     return (
@@ -263,39 +269,94 @@ const ContestDetail = ({ contest, onBack }) => {
               </div>
            </div>
            
-           {/* Cột Phải: Editor */}
+           {/* Cột Phải: Editor & Terminal */}
            <div className="flex flex-col gap-4 h-full overflow-hidden">
               <div className="bg-slate-900 rounded-xl flex flex-col flex-1 overflow-hidden shadow-xl border border-slate-700">
+                 {/* Header Editor */}
                  <div className="p-3 bg-slate-800 flex justify-between items-center border-b border-slate-700">
                     <span className="text-gray-300 text-xs font-bold uppercase flex items-center gap-2"><Code size={14}/> Code Editor</span>
                     <select value={language} onChange={e => setLanguage(e.target.value)} className="bg-slate-700 text-white text-xs px-2 py-1 rounded border border-slate-600 outline-none">
                        {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                     </select>
                  </div>
+                 
+                 {/* Textarea Code */}
                  <textarea 
                     className="flex-1 bg-slate-900 text-gray-200 p-4 font-mono text-sm outline-none resize-none" 
                     value={code} onChange={(e) => setCode(e.target.value)} 
                     placeholder="// Nhập code giải bài..." spellCheck="false"
                  />
-                 <div className="p-3 bg-slate-800 border-t border-slate-700 flex justify-end">
-                    <button onClick={handleSubmit} disabled={submitting} className={`px-6 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition text-white ${submitting ? 'bg-slate-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500'}`}>
-                        {submitting ? 'Đang chấm...' : <><Play size={14}/> Nộp bài</>}
+
+                 {/* --- KHU VỰC TERMINAL (RUN RESULT) --- */}
+                 <AnimatePresence>
+                    {runResult && (
+                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="bg-slate-950 border-t border-slate-800 font-mono text-xs overflow-hidden">
+                            <div className="p-3 max-h-[150px] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-slate-400 font-bold flex gap-2 items-center"><Terminal size={12}/> Run Result</span>
+                                    <button onClick={()=>setRunResult(null)} className="text-[10px] text-slate-500 hover:text-white">Close</button>
+                                </div>
+                                {runResult.stderr || runResult.compile_output ? (
+                                    <pre className="text-red-400 whitespace-pre-wrap">{runResult.stderr || runResult.compile_output}</pre>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                                            <span className="block text-slate-500 mb-1">Your Output</span>
+                                            <div className={`${runResult.stdout?.trim() === runResult.expected_output?.trim() ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {runResult.stdout || <span className="text-slate-600 italic">Empty</span>}
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                                            <span className="block text-slate-500 mb-1">Expected</span>
+                                            <div className="text-blue-400">{runResult.expected_output}</div>
+                                        </div>
+                                        <div className="col-span-2 text-center mt-1">
+                                            {runResult.stdout?.trim() === runResult.expected_output?.trim() ? 
+                                                <span className="text-green-500 font-bold bg-green-900/20 px-2 py-0.5 rounded">Correct Answer</span> : 
+                                                <span className="text-red-500 font-bold bg-red-900/20 px-2 py-0.5 rounded">Wrong Answer</span>
+                                            }
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                 </AnimatePresence>
+
+                 {/* Footer Buttons */}
+                 <div className="p-3 bg-slate-800 border-t border-slate-700 flex justify-end gap-3">
+                    {/* Nút Chạy Thử */}
+                    <button 
+                        onClick={handleRunCode} 
+                        disabled={isRunning || submitting} 
+                        className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition text-slate-300 bg-slate-700 hover:bg-slate-600 border border-slate-600 disabled:opacity-50`}
+                    >
+                        {isRunning ? <Loader2 size={14} className="animate-spin"/> : <Play size={14}/>} Chạy thử
+                    </button>
+
+                    {/* Nút Nộp Bài */}
+                    <button 
+                        onClick={handleSubmit} 
+                        disabled={submitting || isRunning} 
+                        className={`px-6 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition text-white ${submitting ? 'bg-green-800 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/20'}`}
+                    >
+                        {submitting ? <Loader2 size={14} className="animate-spin"/> : <Send size={14}/>} Nộp bài
                     </button>
                  </div>
               </div>
               
-              {/* Kết quả chấm */}
+              {/* Kết quả Nộp Bài (Submit Result) */}
               <AnimatePresence>
-                {result && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`rounded-xl p-4 shadow-lg border-l-4 max-h-[200px] overflow-y-auto ${result.status === 'Accepted' ? 'bg-green-50 border-green-500 text-green-900' : 'bg-red-50 border-red-500 text-red-900'}`}>
+                {submitResult && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`rounded-xl p-4 shadow-lg border-l-4 max-h-[200px] overflow-y-auto ${submitResult.status === 'Accepted' ? 'bg-green-50 border-green-500 text-green-900' : 'bg-red-50 border-red-500 text-red-900'}`}>
                      <div className="flex items-center gap-2 font-bold text-lg mb-2">
-                        {result.status === 'Accepted' ? <CheckCircle size={24}/> : <AlertCircle size={24}/>}
-                        {result.status}
+                        {submitResult.status === 'Accepted' ? <CheckCircle size={24}/> : <AlertCircle size={24}/>}
+                        {submitResult.status}
                      </div>
                      <div className="text-sm">
-                        {result.status === 'Accepted' ? 
-                            <div className="flex gap-4 font-mono opacity-80"><span>⏱ {result.time || 0}s</span><span>💾 {result.memory || 0}KB</span></div> :
-                            <div className="font-mono bg-white/50 p-2 rounded text-xs">{result.error_detail || "Kiểm tra lại logic hoặc test case."}</div>
+                        {submitResult.status === 'Accepted' ? 
+                            <div className="flex gap-4 font-mono opacity-80"><span>⏱ {submitResult.time || 0}s</span><span>💾 {submitResult.memory || 0}KB</span></div> :
+                            <div className="font-mono bg-white/50 p-2 rounded text-xs">{submitResult.error_detail || "Kiểm tra lại logic hoặc test case."}</div>
                         }
                      </div>
                   </motion.div>
@@ -315,7 +376,6 @@ const ContestDetail = ({ contest, onBack }) => {
       <button onClick={onBack} className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-2">← Quay lại danh sách cuộc thi</button>
       
       <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
-         {/* Contest Header */}
          <div className="p-8 border-b border-slate-100 flex justify-between items-end bg-gradient-to-r from-slate-50 to-white">
             <div>
                 <h2 className="text-3xl font-black text-slate-800 mb-2">{contest.title}</h2>
@@ -334,7 +394,6 @@ const ContestDetail = ({ contest, onBack }) => {
             </div>
          </div>
 
-         {/* Content Area */}
          <div className="p-6 bg-slate-50 min-h-[400px]">
             {activeTab === 'problems' && (
                 <div className="grid gap-3">
@@ -399,7 +458,7 @@ const ContestDetail = ({ contest, onBack }) => {
 };
 
 // -----------------------------
-// 5. MAIN PAGE: DANH SÁCH CUỘC THI (Giữ nguyên logic cũ)
+// 5. MAIN PAGE: DANH SÁCH CUỘC THI
 // -----------------------------
 export default function ContestPage() {
   const [contests, setContests] = useState([]);

@@ -39,21 +39,14 @@ const Login = () => {
     setMessage(null);
 
     try {
-      // Gửi username lên server
       const response = await axios.post("http://localhost:5000/api/auth/login", { username, password });
 
       if (response.data.success) {
-        
-        // --- SỬA Ở ĐÂY: Phải lấy 'accessToken' mới đúng ---
         const token = response.data.accessToken; 
-        
         localStorage.setItem("accessToken", token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
         
-        // Nếu bạn dùng Context, cũng phải truyền đúng biến
         if (login) login(response.data.user, token);
-
-        // Dispatch sự kiện để Navbar cập nhật avatar
         window.dispatchEvent(new Event("storage"));
 
         navigate("/");
@@ -80,7 +73,7 @@ const Login = () => {
       const res = await axios.post("http://localhost:5000/api/auth/forgot-password", { email: forgotEmail });
       setForgotMsg(res.data.message);
       if (res.status === 200) {
-        setForgotStep(2); // Chuyển sang bước nhập OTP
+        setForgotStep(2); 
       }
     } catch (err) {
       setForgotMsg(err.response?.data?.message || "Lỗi gửi OTP");
@@ -98,9 +91,8 @@ const Login = () => {
       setForgotMsg(res.data.message);
       if (res.status === 200) {
         setTimeout(() => {
-          setShowForgotModal(false); // Đóng modal
+          setShowForgotModal(false);
           setMessage("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
-          // Reset form modal
           setForgotStep(1); setForgotEmail(""); setOtp(""); setNewPassword("");
         }, 2000);
       }
@@ -111,7 +103,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 overflow-hidden relative">
+    // SỬA Ở ĐÂY: Thêm 'pt-24' (padding-top: 96px) để đẩy nội dung xuống dưới Navbar
+    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 pt-24 overflow-hidden relative">
       
       {/* Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -130,7 +123,7 @@ const Login = () => {
                     <LogIn className="w-10 h-10 text-white" />
                   </div>
                   <h2 className="text-3xl font-bold mb-4">Chào mừng trở lại!</h2>
-                  <p className="text-white/80">Đăng nhập để tiếp tục hành trình chinh phục thuật toán cùng AlgoTrove</p>
+                  <p className="text-white/80">Đăng nhập để tiếp tục hành trình chinh phục thuật toán cùng Algoverse</p>
                </div>
             </div>
 
@@ -198,25 +191,21 @@ const Login = () => {
         </div>
       </motion.div>
 
-      {/* --- MODAL FORGOT PASSWORD --- */}
+      {/* --- MODAL FORGOT PASSWORD (Giữ nguyên) --- */}
       <AnimatePresence>
         {showForgotModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop Blur */}
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowForgotModal(false)}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
-
-            {/* Modal Content */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
             >
-              {/* Header */}
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 flex justify-between items-center text-white">
                 <h3 className="text-xl font-bold flex items-center gap-2">
                    <KeyRound size={20} /> Khôi phục mật khẩu
@@ -226,7 +215,6 @@ const Login = () => {
 
               <div className="p-6 md:p-8">
                 {forgotStep === 1 ? (
-                  // BƯỚC 1: NHẬP EMAIL
                   <div className="space-y-4">
                     <p className="text-gray-600 text-sm text-center">Nhập email đăng ký của bạn. Chúng tôi sẽ gửi mã OTP để đặt lại mật khẩu.</p>
                     <div>
@@ -239,7 +227,6 @@ const Login = () => {
                     </button>
                   </div>
                 ) : (
-                  // BƯỚC 2: NHẬP OTP & PASS MỚI
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 bg-green-50 text-green-700 p-3 rounded-lg text-xs font-medium border border-green-200">
                        <CheckCircle size={14} /> OTP đã được gửi đến {forgotEmail}

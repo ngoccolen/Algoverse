@@ -131,7 +131,7 @@ exports.getAlgorithmByKey = async (req, res) => {
       success: true,
       data: {
         ...currentAlg,
-        isLocked: false, // Xác nhận không khóa
+        isLocked: false, 
         theory: currentAlg.theory,
         complexity: {
             time: currentAlg.time_complexity || currentAlg.complexity || "N/A",
@@ -219,69 +219,71 @@ exports.submitQuestions = async (req, res) => {
 };
 
 // API 4: Nộp bài Code (Dùng Judge0)
+// backend/src/controller/algorithmController.js
+
 exports.submitCode = async (req, res) => {
-  // Kiểm tra Judge0 có sẵn sàng không
-  if (!judge0) return res.status(500).json({success: false, message: "Judge0 module missing or not configured"});
+  // 1. Check Judge0
+  if (!judge0) return res.status(500).json({success: false, message: "Judge0 chưa được cấu hình."});
   
   try {
-    if (!req.user || !req.user.id) return res.status(401).json({success: false, message: "Unauthorized"});
-    const { code, language_id } = req.body;
+    // 2. Auth Check
+    if (!req.user || !req.user.id) return res.status(401).json({success: false, message: "Vui lòng đăng nhập."});
     const userId = req.user.id;
+    const { code, language_id } = req.body;
 
-    // Lấy ID bài học
+    // 3. Xác định bài học (Algorithm ID)
     let algorithmId = req.params.id;
+    // Nếu param là key (vd: "bubble-sort"), tìm ID trong DB
     if (isNaN(algorithmId)) {
         const [algo] = await db.query("SELECT id FROM algorithms WHERE alg_key = ?", [req.params.algKey || req.params.id]);
-        if(!algo.length) return res.status(404).json({success: false, message: "Algo not found"});
+        if(!algo.length) return res.status(404).json({success: false, message: "Không tìm thấy bài học."});
         algorithmId = algo[0].id;
     }
 
-    // Lấy bài tập và testcases
-    const [exs] = await db.query('SELECT * FROM exercises WHERE algorithm_id = ?', [algorithmId]);
-    if (!exs.length) return res.json({ success: false, message: "No exercise found" });
+    // --- CẤU HÌNH ĐÁP ÁN ĐƠN GIẢN (HARDCODE HOẶC LẤY DB) ---
+    // Ở đây mình ví dụ: Bài sắp xếp thì output chuẩn phải là dãy tăng dần
+    // Bạn có thể lưu chuỗi này vào DB trong cột 'expected_output' của bảng exercises nếu muốn
+    const EXPECTED_OUTPUT = "11 12 22 25 34 64 90"; 
 
-    const ex = exs[0]; 
-    const testcases = safeParseJSON(ex.testcases);
+    // 4. Gửi code lên Judge0 (Chế độ chạy file main bình thường)
+    // Không truyền stdin (input) vì ta muốn user tự define mảng trong hàm main
+    const run = await judge0.runSubmission(code, language_id || 54, ""); 
 
-    let passed = 0;
-    let results = [];
+    // 5. Xử lý kết quả
+    const actualOutput = run.stdout ? run.stdout.trim().replace(/\r\n/g, " ") : ""; // Chuẩn hóa về 1 dòng
+    const error = run.stderr || run.compile_output || "";
+    
+    // So sánh (Chỉ cần output chứa đúng dãy số là OK)
+    const isCorrect = !error && actualOutput.includes(EXPECTED_OUTPUT);
+    
+    const score = isCorrect ? 100 : 0;
+    const statusMessage = isCorrect ? "Xuất sắc! Code chạy đúng." : "Kết quả chưa đúng hoặc lỗi biên dịch.";
 
-    // Gửi từng test case lên Judge0
-    for (const t of testcases) {
-      // Gọi hàm runSubmission từ judge0.js
-      const run = await judge0.runSubmission(code, language_id || 54, t.input);
-      
-      const output = run.stdout ? run.stdout.trim() : "";
-      const expected = t.output ? t.output.trim() : "";
-      const error = run.stderr || run.compile_output || "";
-      
-      // Hàm chuẩn hóa chuỗi để so sánh (bỏ dòng trống, khoảng trắng thừa)
-      const normalize = (str) => str.toString().replace(/\r\n/g, "\n").trim();
-      const isCorrect = !error && normalize(output) === normalize(expected);
-      
-      results.push({ 
-          input: t.input, 
-          expected, 
-          actual: output, 
-          passed: isCorrect, 
-          error: error 
-      });
-
-      if (isCorrect) passed++;
-    }
-
-    // Tính điểm code
-    const score = testcases.length > 0 ? Math.round((passed / testcases.length) * 100) : 0;
-
-    // Lưu điểm code vào DB
+    // 6. Lưu tiến độ vào user_progress (Dùng ON DUPLICATE KEY UPDATE để tránh lỗi trùng lặp)
     await db.query(`
-        INSERT INTO user_progress (user_id, algorithm_id, exercises_progress) VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE exercises_progress = ?
-    `, [userId, algorithmId, score, score]);
+        INSERT INTO user_progress (user_id, algorithm_id, exercises_progress, updated_at) 
+        VALUES (?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE exercises_progress = VALUES(exercises_progress), updated_at = NOW()
+    `, [userId, algorithmId, score]);
 
-    res.json({ success: true, passed, total: testcases.length, results, score });
+    // 7. Trả về Frontend
+    res.json({ 
+        success: true, 
+        score: score,
+        passed: isCorrect ? 1 : 0, 
+        total: 1, 
+        results: [{
+            input: "Không cần input (Tự khởi tạo trong main)",
+            expected: EXPECTED_OUTPUT,
+            actual: actualOutput,
+            passed: isCorrect,
+            error: error
+        }],
+        message: statusMessage
+    });
+
   } catch (err) {
     console.error("submitCode Error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: "Lỗi server: " + err.message });
   }
 };

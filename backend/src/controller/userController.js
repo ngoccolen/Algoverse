@@ -23,7 +23,7 @@ module.exports = {
           FROM contest_participants cp
           JOIN contests c ON cp.contest_id = c.id
           WHERE cp.user_id = ?
-          ORDER BY c.startTime DESC LIMIT 5
+          ORDER BY c.start_time DESC LIMIT 5
       `, [userId]);
 
       // 4. Biểu đồ

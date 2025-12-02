@@ -17,6 +17,7 @@ import LoginSuccess from "./pages/LoginSuccess";
 import ResetPasswordOTP from "./pages/ResetPasswordOTP";
 import LearningPath from './pages/LearningPath';
 import LabDetail from './pages/LabDetail'; 
+import AdminDashboard from "./pages/AdminDashboard";
 
 import { AuthContext } from "./context/AuthContext";
 
@@ -67,6 +68,7 @@ export default function App() {
         />
 
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
       </Routes>
     </Router>
   );

@@ -1,16 +1,19 @@
 // src/controller/ContestController.js
 const Contest = require('../../models/Contest'); 
 const Problem = require('../../models/Problem');
-const db = require('../db'); // Thêm db để query bảng contest_participants
+const db = require('../db'); 
 const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer'); 
 
+// --- [MỚI] Import Judge0 để chạy code ---
+const { runSubmission, LANGUAGE_MAPPING } = require('../utils/judge0');
+
 let isCrawling = false;
 
-// =============================================
-// CRAWLER (Hỗ trợ Bypass Cloudflare thủ công)
-// =============================================
+// ============================================================
+// 1. CRAWLER: CÀO ĐỀ TỪ CODEFORCES (Bypass Cloudflare)
+// ============================================================
 async function crawlAndSaveProblems(cfContestId, localContestId) {
   if (isCrawling) return;
   isCrawling = true;
@@ -18,6 +21,7 @@ async function crawlAndSaveProblems(cfContestId, localContestId) {
   
   let browser = null;
   try {
+    // Lấy danh sách bài từ API
     const { data: cfData } = await axios.get(
         `https://codeforces.com/api/contest.standings?contestId=${cfContestId}&from=1&count=1`
     );
@@ -26,6 +30,7 @@ async function crawlAndSaveProblems(cfContestId, localContestId) {
     const problems = cfData.result.problems;
     console.log(`📦 [CRAWLER] Tìm thấy ${problems.length} bài. Đang mở Chrome...`);
 
+    // Khởi động Puppeteer
     browser = await puppeteer.launch({
         headless: false, 
         args: ['--start-maximized'],
@@ -39,9 +44,10 @@ async function crawlAndSaveProblems(cfContestId, localContestId) {
       let contentHtml = "";
       
       try {
-        console.log(`   ⏳ Đang vào bài ${p.index}... (HÃY NHÌN CỬA SỔ CHROME VỪA BẬT)`);
+        console.log(`   ⏳ Đang vào bài ${p.index}...`);
         await page.goto(problemUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
 
+        // Chờ Bypass Cloudflare
         let retries = 0;
         while (retries < 20) {
             const title = await page.title();
@@ -55,7 +61,7 @@ async function crawlAndSaveProblems(cfContestId, localContestId) {
         const $ = cheerio.load(pageContent);
 
         if ($('.problem-statement').length > 0) {
-            $('.problem-statement .header').remove(); 
+            $('.problem-statement .header').remove();
             $('img').each((i, el) => {
                 const src = $(el).attr('src');
                 if (src && !src.startsWith('http')) $(el).attr('src', `https://codeforces.com${src}`);
@@ -64,10 +70,9 @@ async function crawlAndSaveProblems(cfContestId, localContestId) {
             contentHtml = $('.problem-statement').html();
             console.log(`   ✅ LẤY THÀNH CÔNG bài ${p.index}`);
         } else {
-            throw new Error("Không tìm thấy đề (Vẫn bị chặn hoặc trang lỗi)");
+            throw new Error("Không lấy được nội dung HTML");
         }
 
-        // Lưu DB
         const externalId = `${cfContestId}${p.index}`;
         const problemId = await Problem.createOrUpdate({
             title: p.name,
@@ -88,19 +93,19 @@ async function crawlAndSaveProblems(cfContestId, localContestId) {
     }
 
   } catch (err) {
-    console.error("❌ Lỗi tổng:", err.message);
+    console.error("❌ Lỗi tổng Crawler:", err.message);
   } finally {
     isCrawling = false;
     if (browser) await browser.close();
   }
 }
 
-// =============================================
-// MAIN CONTROLLER
-// =============================================
+// ============================================================
+// 2. MAIN CONTROLLER
+// ============================================================
 module.exports = {
   
-  // 1. Lấy danh sách Contest
+  // --- PUBLIC: Lấy danh sách Contest ---
   getAll: async (req, res) => {
     try {
         const contests = await Contest.getAll();
@@ -109,30 +114,13 @@ module.exports = {
         res.status(500).json({ error: "Lỗi lấy danh sách contest" }); 
     }
   },
-  
-  // 2. Tạo Contest mới
-  create: async (req, res) => {
-      try { 
-          const id = await Contest.create(req.body); 
-          res.json({success: true, id}); 
-      } catch(e) { 
-          res.status(500).json({ error: "Lỗi tạo contest" });
-      }
-  },
 
-  // 3. Import từ Codeforces (API này để gọi thủ công nếu cần)
-  importFromCodeforces: async (req, res) => { 
-      // Logic import có thể viết sau, hiện tại để trống để tránh lỗi
-      res.json({success: true, message: "Đang phát triển"}); 
-  },
-
-  // 4. Lấy chi tiết Contest (Kèm Logic Auto-Crawl)
+  // --- PUBLIC: Lấy chi tiết Contest (Kèm Logic Auto-Crawl) ---
   getDetail: async (req, res) => {
     try {
       const contestId = req.params.id;
       let contest = await Contest.getById(contestId);
 
-      // Nếu chưa có contest trong DB -> Thử gọi Codeforces API để tạo vỏ
       if (!contest) {
          try {
             const { data } = await axios.get(`https://codeforces.com/api/contest.standings?contestId=${contestId}&from=1&count=1`);
@@ -153,10 +141,8 @@ module.exports = {
          }
       }
 
-      // Lấy danh sách bài tập
       let problems = await Problem.getByContest(contestId);
 
-      // [AUTO-CRAWL]: Nếu contest Codeforces mà chưa có bài -> Gọi cào
       if (problems.length === 0 && contest.source === 'codeforces') {
           crawlAndSaveProblems(contestId, contestId);
       }
@@ -168,17 +154,12 @@ module.exports = {
     }
   },
 
-  // =============================================
-  // CÁC HÀM MỚI CHO TÍNH NĂNG CONTEST THỰC TẾ
-  // =============================================
-
-  // 5. Đăng ký tham gia (Register)
+  // --- USER: Đăng ký tham gia ---
   registerContest: async (req, res) => {
     try {
         const { contestId } = req.body;
-        const userId = req.user.id; // Lấy từ verifyToken
+        const userId = req.user.id; 
 
-        // Kiểm tra đã đăng ký chưa
         const [existing] = await db.query(
             "SELECT * FROM contest_participants WHERE contest_id = ? AND user_id = ?", 
             [contestId, userId]
@@ -200,7 +181,7 @@ module.exports = {
     }
   },
 
-  // 6. Kiểm tra trạng thái đăng ký
+  // --- USER: Kiểm tra trạng thái đăng ký ---
   checkRegistration: async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -213,12 +194,11 @@ module.exports = {
     }
   },
 
-  // 7. Lấy Bảng Xếp Hạng (Leaderboard)
+  // --- USER: Xem Bảng Xếp Hạng ---
   getLeaderboard: async (req, res) => {
     try {
-        const { id } = req.params; // contestId
+        const { id } = req.params; 
 
-        // Query lấy username, avatar, điểm, penalty
         const [rows] = await db.query(`
             SELECT u.username, u.avatar, p.score, p.penalty
             FROM contest_participants p
@@ -232,5 +212,106 @@ module.exports = {
         console.error("Leaderboard Error:", err);
         res.status(500).json({ success: false, message: "Lỗi tải BXH" });
     }
+  },
+
+  // --- [MỚI] USER: Chạy Thử Code (Run Code) ---
+  runContestCode: async (req, res) => {
+    try {
+        const { language, source, problemId } = req.body;
+        
+        // 1. Lấy Sample Input/Output từ DB
+        const [rows] = await db.query(
+            `SELECT sample_input, sample_output FROM problems WHERE id = ?`, 
+            [problemId]
+        );
+        
+        if (rows.length === 0) return res.status(404).json({ message: "Bài toán không tồn tại" });
+        const problem = rows[0];
+
+        // 2. Validate Ngôn ngữ
+        const languageId = LANGUAGE_MAPPING[language];
+        if (!languageId) return res.status(400).json({ message: "Ngôn ngữ không hỗ trợ" });
+
+        // 3. Gửi sang Judge0 chấm (Chỉ chạy test mẫu)
+        const result = await runSubmission(source, languageId, problem.sample_input || "");
+
+        // 4. Trả về kết quả
+        res.json({
+            success: true,
+            status: result.status.description,
+            stdout: result.stdout ? result.stdout.trim() : "",
+            stderr: result.stderr,
+            compile_output: result.compile_output,
+            expected_output: problem.sample_output ? problem.sample_output.trim() : "",
+            time: result.time,
+            memory: result.memory
+        });
+
+    } catch (error) {
+        console.error("Run Code Error:", error);
+        res.status(500).json({ message: "Lỗi server khi chạy thử code" });
+    }
+  },
+
+  // --- ADMIN: Tạo Contest thủ công ---
+  createContest: async (req, res) => {
+    try {
+        const { title, description, startTime, durationMinutes } = req.body;
+        
+        if (!title || !startTime || !durationMinutes) {
+            return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+        }
+
+        const start = new Date(startTime);
+        const end = new Date(start.getTime() + durationMinutes * 60000);
+
+        const [result] = await db.query(
+            "INSERT INTO contests (title, description, start_time, end_time, status, source) VALUES (?, ?, ?, ?, 'upcoming', 'system')",
+            [title, description, start, end]
+        );
+
+        res.json({ success: true, message: "Tạo cuộc thi thành công!", contestId: result.insertId });
+    } catch (err) {
+        console.error("Create Contest Error:", err);
+        res.status(500).json({ message: "Lỗi tạo contest" });
+    }
+  },
+
+  // --- ADMIN: Thêm bài tập vào Contest ---
+  addProblemToContest: async (req, res) => {
+    try {
+        const { contestId, problemId, index, points } = req.body;
+        
+        if (!contestId || !problemId || !index) {
+            return res.status(400).json({ message: "Thiếu thông tin" });
+        }
+
+        const [exists] = await db.query(
+            "SELECT * FROM contest_problems WHERE contest_id = ? AND problem_id = ?",
+            [contestId, problemId]
+        );
+
+        if (exists.length > 0) {
+            return res.status(400).json({ message: "Bài tập này đã có trong cuộc thi!" });
+        }
+        
+        await db.query(
+            "INSERT INTO contest_problems (contest_id, problem_id, problem_index, points) VALUES (?, ?, ?, ?)",
+            [contestId, problemId, index, points || 100]
+        );
+
+        res.json({ success: true, message: "Đã thêm bài vào contest" });
+    } catch (err) {
+        console.error("Add Problem Error:", err);
+        res.status(500).json({ message: "Lỗi thêm bài tập" });
+    }
+  },
+
+  importFromCodeforces: async (req, res) => { 
+      res.json({success: true, message: "Tính năng này đã được tích hợp vào getDetail (Auto-Crawl)"}); 
+  },
+  
+  create: async (req, res) => {
+      module.exports.createContest(req, res);
   }
 };
