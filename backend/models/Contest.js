@@ -1,7 +1,7 @@
 const db = require('../src/db'); 
 
 module.exports = {
-  // 1. Lấy tất cả cuộc thi (Sắp xếp mới nhất lên đầu)
+  //Lấy tất cả cuộc thi 
   getAll: async () => {
     const sql = `
       SELECT 
@@ -21,7 +21,7 @@ module.exports = {
     return rows;
   },
 
-  // 2. Lấy chi tiết 1 cuộc thi theo ID
+  // Lấy chi tiết 1 cuộc thi theo ID
   getById: async (id) => {
     const sql = `
       SELECT 
@@ -41,10 +41,8 @@ module.exports = {
     return rows[0];
   },
 
-  // 3. Tạo cuộc thi mới (Hỗ trợ cả ID thủ công từ CF hoặc ID tự tăng)
+  //Tạo cuộc thi mới 
   create: async (data) => {
-    // Logic: Nếu bạn truyền data.id vào (ví dụ 2062) -> Nó dùng ID đó.
-    // Nếu bạn KHÔNG truyền data.id -> MySQL tự sinh ID mới (1, 2, 3...)
     const sql = `
       INSERT INTO contests 
         (id, title, description, start_time, end_time, difficulty, status, prize)
@@ -58,7 +56,7 @@ module.exports = {
     `;
 
     const params = [
-      data.id || null, // Quan trọng: Null thì tự tăng, có số thì lấy số đó
+      data.id || null, 
       data.title,
       data.description,
       data.startTime, 
@@ -70,7 +68,6 @@ module.exports = {
 
     const [result] = await db.query(sql, params);
     
-    // Trả về ID để Controller sử dụng
     return data.id || result.insertId;
   }
 };

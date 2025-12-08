@@ -1,7 +1,6 @@
 const db = require('../src/db'); //
 
 const AlgorithmModel = {
-  // Lấy tất cả thuật toán kèm theo tiến trình của user cụ thể
   async getAllWithProgress(userId) {
     const sql = `
       SELECT a.*, 
@@ -14,15 +13,11 @@ const AlgorithmModel = {
     return rows;
   },
 
-  // Cập nhật tiến trình học
   async updateProgress(userId, algKey, percent) {
-    // Lấy ID thuật toán từ Key
     const [alg] = await db.query("SELECT id FROM algorithms WHERE alg_key = ?", [algKey]);
     if (alg.length === 0) throw new Error("Algorithm not found");
     const algId = alg[0].id;
-
     const status = percent >= 100 ? 'completed' : 'in_progress';
-
     const sql = `
       INSERT INTO user_progress (user_id, alg_id, progress_percent, status)
       VALUES (?, ?, ?, ?)

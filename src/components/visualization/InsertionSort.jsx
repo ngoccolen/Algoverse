@@ -11,19 +11,16 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
   const [compareIndices, setCompareIndices] = useState([]); 
   const [logs, setLogs] = useState([]); 
 
-  // Hàm thêm log
   const addLog = (message, type = 'info') => {
     setLogs(prev => [...prev, { message, type, id: Date.now() + Math.random() }]);
   };
 
-  // Auto-scroll log
   useEffect(() => {
     if (logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [logs]);
 
-  // Reset trạng thái
   useEffect(() => {
     setArray(data);
     setCompareIndices([]);
@@ -31,7 +28,7 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
     setLogs([{ message: "Sẵn sàng. Nhấn 'Chạy' để bắt đầu...", type: 'system' }]);
   }, [data]);
 
-  // Vẽ biểu đồ D3 (Giữ nguyên logic vẽ)
+  // Vẽ biểu đồ D3 
   useEffect(() => {
     if (!svgRef.current) return;
     
@@ -73,14 +70,12 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
       
   }, [array, compareIndices]);
 
-  // Trigger chạy thuật toán
   useEffect(() => {
     if (isPlaying && !sorting) {
       runInsertionSort();
     }
   }, [isPlaying]);
 
-  // --- LOGIC INSERTION SORT ---
   const runInsertionSort = async () => {
     setSorting(true);
     setLogs([]);
@@ -89,34 +84,31 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
     const arr = [...array];
     const n = arr.length;
     
-    // Bắt đầu từ phần tử thứ 2 (index 1) vì phần tử đầu coi như đã xếp
     for (let i = 1; i < n; i++) {
-      let key = arr[i]; // Giá trị cần chèn (quân bài đang cầm trên tay)
+      let key = arr[i]; 
       let j = i - 1;
       
       addLog(`--- Xét phần tử index [${i}] (Giá trị: ${key}) ---`, "header");
-      setCompareIndices([i]); // Highlight phần tử đang xét (Key)
+      setCompareIndices([i]); 
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Di chuyển các phần tử lớn hơn key về phía sau
       while (j >= 0 && arr[j] > key) {
         addLog(`  > ${arr[j]} > ${key}: Dời ${arr[j]} sang phải`, "info");
         
-        setCompareIndices([j, j + 1]); // Highlight vị trí đang dời
+        setCompareIndices([j, j + 1]); 
         
-        arr[j + 1] = arr[j]; // Dời số lớn hơn sang phải
-        setArray([...arr]); // Cập nhật hình ảnh (lúc này sẽ thấy 2 cột giống nhau tạm thời)
+        arr[j + 1] = arr[j]; 
+        setArray([...arr]); 
         
         await new Promise(resolve => setTimeout(resolve, 600));
         j = j - 1;
       }
       
-      // Chèn key vào đúng vị trí tìm được
       if (j + 1 !== i) {
           arr[j + 1] = key;
           addLog(`  > Chèn Key (${key}) vào vị trí [${j + 1}]`, "swap");
           setArray([...arr]);
-          setCompareIndices([j + 1]); // Highlight vị trí vừa chèn xong
+          setCompareIndices([j + 1]); 
       } else {
           addLog(`  > Key (${key}) giữ nguyên vị trí.`, "success");
       }

@@ -10,12 +10,13 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // State quản lý User
   const [user, setUser] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,6 +55,10 @@ const Navbar = () => {
     { id: '/contests', label: 'Cuộc thi', icon: Trophy },
     { id: '/community', label: 'Cộng đồng', icon: Users },
   ];
+  
+  if (isAdminPage) {
+    return null;
+  }
 
   return (
     <>
@@ -67,7 +72,7 @@ const Navbar = () => {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Container chính: relative để căn giữa menu */}
+          {/* Container chính */}
           <div className={`relative flex items-center justify-between ${isScrolled ? 'h-16' : 'h-20'}`}>
 
             {/* 1. LOGO */}
@@ -87,7 +92,6 @@ const Navbar = () => {
               </span>
             </Link>
 
-            {/* 2. MENU CENTER (Căn giữa & Không xuống dòng) */}
             <div className="hidden lg:flex items-center space-x-1 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -107,10 +111,8 @@ const Navbar = () => {
                         />
                       )}
                       
-                      {/* Icon */}
                       <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-cyan-400' : 'text-slate-400'}`} />
                       
-                      {/* Text: Thêm whitespace-nowrap để bắt buộc 1 dòng */}
                       <span className={`text-sm font-medium whitespace-nowrap ${active ? 'text-white' : 'text-slate-300'}`}>
                         {item.label}
                       </span>
@@ -120,7 +122,6 @@ const Navbar = () => {
               })}
             </div>
 
-            {/* 3. RIGHT SIDE */}
             <div className="hidden lg:flex items-center space-x-4 z-10 shrink-0">
               {user ? (
                 <div className="relative">

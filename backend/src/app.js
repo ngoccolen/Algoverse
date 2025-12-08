@@ -16,7 +16,7 @@ const problemRoutes = require('./routes/problemRoutes');
 const postRoutes = require('./routes/postRoutes'); 
 const userRoutes = require('./routes/userRoutes'); 
 const submissionController = require('./controller/submissionController'); 
-
+const submissionRoutes = require('./routes/submissionRoutes');
 dotenv.config();
 
 const app = express();
@@ -32,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 // [THÊM 2]: Cấu hình để hiển thị ảnh từ thư mục uploads
 // Giả sử app.js nằm trong folder src, thì uploads nằm ngoài src nên dùng '../uploads'
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/submissions', submissionRoutes);
 
 // ... Phần session và passport giữ nguyên ...
 app.use(
@@ -46,7 +47,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ... Các routes API giữ nguyên ...
 app.use('/api/auth', authRoutes);
 app.use('/api/algorithms', algorithmRoutes);
 app.use('/api/practice', practiceRoutes);

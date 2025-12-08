@@ -1,4 +1,3 @@
-// src/components/lab/QuizSection.jsx
 import React from 'react';
 import { CheckCircle, Check, X, Info, Send, RefreshCw, Loader2 } from "lucide-react";
 

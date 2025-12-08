@@ -1,6 +1,8 @@
+//Xử lý logic đăng nhập bằng google
+
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const db = require("../src/db"); // Đường dẫn đã sửa
+const db = require("../src/db"); 
 require("dotenv").config();
 
 passport.use(
@@ -14,19 +16,14 @@ passport.use(
       try {
         const email = profile.emails[0].value;
         const username = profile.displayName;
-
         // Kiểm tra user trong database
         const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
-
         let user;
-
-        // Nếu chưa có user -> tạo mới
         if (rows.length === 0) {
           const [insert] = await db.query(
             "INSERT INTO users (username, email, password) VALUES (?, ?, '')",
             [username, email]
           );
-
           user = {
             id: insert.insertId,
             username,
@@ -35,7 +32,6 @@ passport.use(
         } else {
           user = rows[0];
         }
-
         return done(null, user);
       } catch (error) {
         return done(error, null);
@@ -44,12 +40,11 @@ passport.use(
   )
 );
 
-// Serialize
+//Quản lý phiên đăng nhập
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-// Deserialize
 passport.deserializeUser(async (id, done) => {
   const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [id]);
   done(null, rows[0]);

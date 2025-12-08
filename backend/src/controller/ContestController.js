@@ -1,4 +1,5 @@
-// src/controller/ContestController.js
+// controllers/ContestController.js
+
 const Contest = require('../../models/Contest'); 
 const Problem = require('../../models/Problem');
 const db = require('../db'); 
@@ -6,121 +7,36 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer'); 
 
-// --- [MỚI] Import Judge0 để chạy code ---
 const { runSubmission, LANGUAGE_MAPPING } = require('../utils/judge0');
 
-let isCrawling = false;
+// Hàm crawl dữ liệu (giữ nguyên nếu bạn đã có, hoặc comment lại nếu chưa dùng)
+const crawlAndSaveProblems = async (contestId, externalId) => {
+    // Logic crawl Codeforces của bạn ở đây...
+    // Nếu chưa có, bạn có thể để trống hoặc bổ sung sau.
+    console.log("Crawling problems for contest:", contestId);
+};
 
-// ============================================================
-// 1. CRAWLER: CÀO ĐỀ TỪ CODEFORCES (Bypass Cloudflare)
-// ============================================================
-async function crawlAndSaveProblems(cfContestId, localContestId) {
-  if (isCrawling) return;
-  isCrawling = true;
-  console.log(`🚀 [CRAWLER] Bắt đầu cào contest ${cfContestId}...`);
-  
-  let browser = null;
-  try {
-    // Lấy danh sách bài từ API
-    const { data: cfData } = await axios.get(
-        `https://codeforces.com/api/contest.standings?contestId=${cfContestId}&from=1&count=1`
-    );
-    
-    if (cfData.status !== 'OK') return;
-    const problems = cfData.result.problems;
-    console.log(`📦 [CRAWLER] Tìm thấy ${problems.length} bài. Đang mở Chrome...`);
-
-    // Khởi động Puppeteer
-    browser = await puppeteer.launch({
-        headless: false, 
-        args: ['--start-maximized'],
-        defaultViewport: null
-    });
-
-    const page = await browser.newPage();
-    
-    for (const p of problems) {
-      const problemUrl = `https://codeforces.com/contest/${cfContestId}/problem/${p.index}`;
-      let contentHtml = "";
-      
-      try {
-        console.log(`   ⏳ Đang vào bài ${p.index}...`);
-        await page.goto(problemUrl, { waitUntil: 'domcontentloaded', timeout: 120000 });
-
-        // Chờ Bypass Cloudflare
-        let retries = 0;
-        while (retries < 20) {
-            const title = await page.title();
-            if (!title.includes("Just a moment") && !title.includes("Attention Required")) break;
-            console.log(`      ⚠️ Đang bị chặn. Vui lòng BẤM CAPTCHA trên cửa sổ Chrome!`);
-            await new Promise(r => setTimeout(r, 2000));
-            retries++;
-        }
-
-        const pageContent = await page.content();
-        const $ = cheerio.load(pageContent);
-
-        if ($('.problem-statement').length > 0) {
-            $('.problem-statement .header').remove();
-            $('img').each((i, el) => {
-                const src = $(el).attr('src');
-                if (src && !src.startsWith('http')) $(el).attr('src', `https://codeforces.com${src}`);
-                $(el).css('max-width', '100%');
-            });
-            contentHtml = $('.problem-statement').html();
-            console.log(`   ✅ LẤY THÀNH CÔNG bài ${p.index}`);
-        } else {
-            throw new Error("Không lấy được nội dung HTML");
-        }
-
-        const externalId = `${cfContestId}${p.index}`;
-        const problemId = await Problem.createOrUpdate({
-            title: p.name,
-            difficulty: p.rating ? (p.rating >= 1600 ? 'Hard' : 'Medium') : 'Easy',
-            contentHtml: contentHtml,
-            sampleInput: "", 
-            sampleOutput: "",
-            externalId: externalId,
-            externalLink: problemUrl
-        });
-
-        await Problem.linkToContest(localContestId, problemId, p.index);
-        
-      } catch (err) {
-        console.error(`   ❌ Lỗi bài ${p.index}: ${err.message}`);
-      }
-      await new Promise(r => setTimeout(r, 1000));
-    }
-
-  } catch (err) {
-    console.error("❌ Lỗi tổng Crawler:", err.message);
-  } finally {
-    isCrawling = false;
-    if (browser) await browser.close();
-  }
-}
-
-// ============================================================
-// 2. MAIN CONTROLLER
-// ============================================================
 module.exports = {
   
-  // --- PUBLIC: Lấy danh sách Contest ---
   getAll: async (req, res) => {
     try {
-        const contests = await Contest.getAll();
-        res.json({ success: true, contests });
+        const [rows] = await db.query("SELECT * FROM contests ORDER BY start_time DESC");
+        res.json({ success: true, contests: rows });
     } catch (e) { 
         res.status(500).json({ error: "Lỗi lấy danh sách contest" }); 
     }
   },
 
-  // --- PUBLIC: Lấy chi tiết Contest (Kèm Logic Auto-Crawl) ---
+  // --- [UPDATED] Lấy chi tiết cuộc thi + Trạng thái bài làm ---
   getDetail: async (req, res) => {
     try {
       const contestId = req.params.id;
+      // Lấy ID người dùng hiện tại (nếu đã đăng nhập)
+      const userId = req.user ? req.user.id : null; 
+
       let contest = await Contest.getById(contestId);
 
+      // Logic tự động import từ Codeforces (nếu chưa có trong DB)
       if (!contest) {
          try {
             const { data } = await axios.get(`https://codeforces.com/api/contest.standings?contestId=${contestId}&from=1&count=1`);
@@ -143,9 +59,51 @@ module.exports = {
 
       let problems = await Problem.getByContest(contestId);
 
+      // Auto-crawl nếu là contest Codeforces và chưa có bài
       if (problems.length === 0 && contest.source === 'codeforces') {
-          crawlAndSaveProblems(contestId, contestId);
+          // Lưu ý: Đảm bảo hàm này đã được định nghĩa hoặc import
+          if (typeof crawlAndSaveProblems === 'function') {
+              await crawlAndSaveProblems(contestId, contestId);
+              problems = await Problem.getByContest(contestId); // Load lại sau khi crawl
+          }
       }
+
+      // --- [NEW LOGIC] Map trạng thái làm bài của User ---
+      if (userId && problems.length > 0) {
+          // Lấy tất cả submission của user trong contest này
+          const [submissions] = await db.query(`
+              SELECT problem_id, status, source_code 
+              FROM submissions 
+              WHERE user_id = ? AND contest_id = ?
+              ORDER BY id DESC
+          `, [userId, contestId]);
+
+          problems = problems.map(prob => {
+              // 1. Tìm xem đã Accepted bài này chưa?
+              const solvedSub = submissions.find(s => s.problem_id === prob.id && s.status === 'Accepted');
+              
+              // 2. Nếu chưa, lấy bài nộp mới nhất (để hiện code dở dang)
+              const latestSub = submissions.find(s => s.problem_id === prob.id);
+              
+              let status = null;
+              let user_code = null;
+
+              if (solvedSub) {
+                  status = 'Accepted';
+                  user_code = solvedSub.source_code;
+              } else if (latestSub) {
+                  status = latestSub.status;
+                  user_code = latestSub.source_code;
+              }
+
+              return {
+                  ...prob,
+                  status: status,      // 'Accepted', 'Wrong Answer', ...
+                  user_code: user_code // Code để fill vào editor
+              };
+          });
+      }
+      // ----------------------------------------------------
 
       res.json({ success: true, contest, problems });
     } catch (err) {
@@ -154,7 +112,6 @@ module.exports = {
     }
   },
 
-  // --- USER: Đăng ký tham gia ---
   registerContest: async (req, res) => {
     try {
         const { contestId } = req.body;
@@ -181,7 +138,6 @@ module.exports = {
     }
   },
 
-  // --- USER: Kiểm tra trạng thái đăng ký ---
   checkRegistration: async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -194,7 +150,7 @@ module.exports = {
     }
   },
 
-  // --- USER: Xem Bảng Xếp Hạng ---
+  // Xem Bảng Xếp Hạng ---
   getLeaderboard: async (req, res) => {
     try {
         const { id } = req.params; 
@@ -214,12 +170,11 @@ module.exports = {
     }
   },
 
-  // --- [MỚI] USER: Chạy Thử Code (Run Code) ---
-  runContestCode: async (req, res) => {
+  // Chạy Thử Code 
+  runCode: async (req, res) => {
     try {
         const { language, source, problemId } = req.body;
-        
-        // 1. Lấy Sample Input/Output từ DB
+        // Lấy Sample Input/Output từ DB
         const [rows] = await db.query(
             `SELECT sample_input, sample_output FROM problems WHERE id = ?`, 
             [problemId]
@@ -227,15 +182,11 @@ module.exports = {
         
         if (rows.length === 0) return res.status(404).json({ message: "Bài toán không tồn tại" });
         const problem = rows[0];
-
-        // 2. Validate Ngôn ngữ
         const languageId = LANGUAGE_MAPPING[language];
         if (!languageId) return res.status(400).json({ message: "Ngôn ngữ không hỗ trợ" });
-
-        // 3. Gửi sang Judge0 chấm (Chỉ chạy test mẫu)
+        // Gửi sang Judge0 chấm 
         const result = await runSubmission(source, languageId, problem.sample_input || "");
-
-        // 4. Trả về kết quả
+        // Trả về kết quả
         res.json({
             success: true,
             status: result.status.description,
@@ -253,7 +204,6 @@ module.exports = {
     }
   },
 
-  // --- ADMIN: Tạo Contest thủ công ---
   createContest: async (req, res) => {
     try {
         const { title, description, startTime, durationMinutes } = req.body;
@@ -266,8 +216,8 @@ module.exports = {
         const end = new Date(start.getTime() + durationMinutes * 60000);
 
         const [result] = await db.query(
-            "INSERT INTO contests (title, description, start_time, end_time, status, source) VALUES (?, ?, ?, ?, 'upcoming', 'system')",
-            [title, description, start, end]
+            "INSERT INTO contests (title, description, start_time, end_time, status) VALUES (?, ?, ?, ?, ?)",
+            [title, description, start, end, 'upcoming']
         );
 
         res.json({ success: true, message: "Tạo cuộc thi thành công!", contestId: result.insertId });
@@ -277,7 +227,6 @@ module.exports = {
     }
   },
 
-  // --- ADMIN: Thêm bài tập vào Contest ---
   addProblemToContest: async (req, res) => {
     try {
         const { contestId, problemId, index, points } = req.body;
@@ -304,6 +253,64 @@ module.exports = {
     } catch (err) {
         console.error("Add Problem Error:", err);
         res.status(500).json({ message: "Lỗi thêm bài tập" });
+    }
+  },
+  
+  update: async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, startTime, durationMinutes, status } = req.body;
+        
+        if (!id) return res.status(400).json({ message: "Thiếu Contest ID" });
+
+        let query = "UPDATE contests SET title=?, description=?, status=?";
+        let params = [title, description, status];
+        
+        if (startTime) {
+            const start = new Date(startTime);
+            params.push(start);
+            query += ", start_time=?";
+            
+            if (durationMinutes) {
+                const end = new Date(start.getTime() + durationMinutes * 60000);
+                params.push(end);
+                query += ", end_time=?";
+            }
+        }
+        
+        query += " WHERE id=?";
+        params.push(id);
+
+        const [result] = await db.query(query, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Contest không tồn tại hoặc không có gì thay đổi." });
+        }
+        
+        res.json({ success: true, message: "Đã cập nhật Contest thành công." });
+    } catch (err) {
+        console.error("Update Contest Error:", err);
+        res.status(500).json({ message: "Lỗi cập nhật Contest" });
+    }
+  },
+
+  deleteContest: async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        await db.query("DELETE FROM contest_problems WHERE contest_id = ?", [id]);
+        await db.query("DELETE FROM contest_participants WHERE contest_id = ?", [id]);
+
+        const [result] = await db.query("DELETE FROM contests WHERE id = ?", [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Contest không tồn tại." });
+        }
+        
+        res.json({ success: true, message: "Đã xóa Contest thành công." });
+    } catch (err) {
+        console.error("Delete Contest Error:", err);
+        res.status(500).json({ message: "Lỗi xóa Contest" });
     }
   },
 

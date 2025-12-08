@@ -2,6 +2,15 @@ const db = require("../db");
 
 const judge0 = require("../utils/judge0");
 
+const createNewExerciseInDb = async ({ title, prompt, testcases, solution_description, algorithm_id }) => {
+    const [result] = await db.query(
+        "INSERT INTO Exercises (title, prompt, testcases, solution_description, algorithm_id) VALUES (?, ?, ?, ?, ?)",
+        [title, prompt, JSON.stringify(testcases), solution_description, algorithm_id]
+    );
+    return result.insertId;
+};
+// ------------------------------------------------------------------
+
 exports.getExerciseByAlgorithm = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -48,7 +57,7 @@ exports.submitExercise = async (req, res) => {
     let results = [];
 
     for (const t of tests) {
-      const run = await judge0.runCode(71, code, t.input); // 71 = python3
+      const run = await judge0.runCode(71, code, t.input); 
       const ok = run.stdout?.trim() === t.output.trim();
 
       results.push({
@@ -80,4 +89,27 @@ exports.submitExercise = async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+};
+
+
+exports.createExercise = async (req, res) => {
+    try {
+        const { title, prompt, testcases, solution_description, algorithm_id } = req.body;
+
+        if (!title || !prompt || !testcases || !algorithm_id) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin bắt buộc (title, prompt, testcases, algorithm_id)" });
+        }
+        
+        if (!Array.isArray(testcases) || testcases.length === 0) {
+            return res.status(400).json({ success: false, message: "Testcases phải là một mảng không rỗng." });
+        }
+
+        const newId = await createNewExerciseInDb({ title, prompt, testcases, solution_description, algorithm_id });
+
+        res.json({ success: true, message: "Tạo bài tập luyện tập thành công!", exerciseId: newId });
+
+    } catch (err) {
+        console.error("Create Exercise Error:", err);
+        res.status(500).json({ success: false, error: "Lỗi Server khi tạo bài tập" });
+    }
 };

@@ -1,5 +1,5 @@
 // pages/Explore.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
@@ -19,14 +19,30 @@ import {
   Activity
 } from 'lucide-react';
 
+// --- HÀM TIỆN ÍCH: Xử lý tiếng Việt ---
+// Chuyển đổi chuỗi tiếng Việt có dấu thành không dấu để tìm kiếm chính xác
+const removeVietnameseTones = (str) => {
+  if (!str) return "";
+  str = str.toLowerCase();
+  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+  str = str.replace(/đ/g, "d");
+  // Loại bỏ các dấu thanh/ký tự đặc biệt còn sót lại
+  str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+  return str;
+};
+
 // --- Dữ liệu Chủ đề (Categories) ---
-// SỬA LỖI: Truyền trực tiếp Component Icon thay vì dùng hàm
 const TOPICS = [
   {
     id: "sorting",
     title: "Thuật toán Sắp xếp",
     description: "Bubble Sort, Quick Sort, Merge Sort... Nền tảng tư duy tối ưu hóa dữ liệu.",
-    icon: Activity, // Truyền tên Component
+    icon: Activity,
     count: "8 Bài học",
     level: "Cơ bản",
     color: "from-blue-500 to-cyan-500",
@@ -132,10 +148,21 @@ export default function Explore() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredTopics = TOPICS.filter(topic =>
-    topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    topic.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // --- LOGIC TÌM KIẾM ---
+  // Sử dụng useMemo để tối ưu, lọc dựa trên chuỗi đã được loại bỏ dấu
+  const filteredTopics = useMemo(() => {
+    const normalizedSearch = removeVietnameseTones(searchTerm.trim());
+
+    if (!normalizedSearch) return TOPICS;
+
+    return TOPICS.filter(topic => {
+      const normalizedTitle = removeVietnameseTones(topic.title);
+      const normalizedDesc = removeVietnameseTones(topic.description);
+      
+      return normalizedTitle.includes(normalizedSearch) || 
+             normalizedDesc.includes(normalizedSearch);
+    });
+  }, [searchTerm]);
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white font-sans flex flex-col">
@@ -216,7 +243,9 @@ export default function Explore() {
             </span>
           </div>
 
+          {/* QUAN TRỌNG: Thêm key để reset animation khi search thay đổi */}
           <motion.div 
+            key={searchTerm + filteredTopics.length}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -224,7 +253,6 @@ export default function Explore() {
           >
             {filteredTopics.length > 0 ? (
               filteredTopics.map((topic) => {
-                // SỬA LỖI: Lấy Icon ra thành biến và render như Component
                 const IconComponent = topic.icon;
                 
                 return (
@@ -243,7 +271,6 @@ export default function Explore() {
                       
                       <div className="flex justify-between items-start mb-6">
                         <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${topic.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
-                          {/* Render Icon Component an toàn */}
                           <IconComponent className="w-7 h-7 text-white" />
                         </div>
                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 border border-slate-700 ${

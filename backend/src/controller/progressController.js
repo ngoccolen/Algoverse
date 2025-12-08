@@ -1,4 +1,3 @@
-// controllers/progressController.js
 const db = require("../db");
 
 
@@ -9,7 +8,6 @@ exports.updateProgress = async (req, res) => {
 
     if (!algorithmId) return res.status(400).json({ message: 'algorithmId required' });
 
-    // Upsert into user_progress (your table has UNIQUE(user_id, algorithm_id))
     await pool.query(
       `INSERT INTO user_progress (user_id, algorithm_id, theory_progress, questions_progress, exercises_progress, last_accessed)
        VALUES (?, ?, ?, ?, ?, NOW())

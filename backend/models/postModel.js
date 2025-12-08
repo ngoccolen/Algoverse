@@ -1,8 +1,7 @@
-const db = require('../src/db');
-
+const db = require('../src/db'); 
 
 const Post = {
-  // Lấy danh sách bài viết (Hỗ trợ tìm kiếm, lọc, sắp xếp)
+  // LẤY DANH SÁCH BÀI VIẾT 
   async getAll({ search, sort, filter }) {
     let sql = `
       SELECT p.*, u.username, u.avatar, 
@@ -18,37 +17,36 @@ const Post = {
       sql += ` AND (p.title LIKE ? OR p.content LIKE ?)`;
       params.push(`%${search}%`, `%${search}%`);
     }
-
-    // Lọc theo tag hoặc trạng thái
     if (filter && filter !== 'All') {
-      // Nếu filter là tag (Sorting, Graph...) hoặc status
       sql += ` AND (p.tags LIKE ? OR p.status = ?)`;
       params.push(`%${filter}%`, filter);
     }
 
-    // Sắp xếp
     if (sort === 'trending') {
       sql += ` ORDER BY p.views DESC, p.votes DESC`;
     } else if (sort === 'unanswered') {
       sql += ` AND p.status = 'unanswered' ORDER BY p.created_at DESC`;
     } else {
-      sql += ` ORDER BY p.created_at DESC`; // Mặc định mới nhất
+      sql += ` ORDER BY p.created_at DESC`; 
     }
 
     const [rows] = await db.query(sql, params);
     return rows;
   },
 
-  // Tạo bài viết mới
+  
+  //TẠO BÀI VIẾT MỚI 
   async create(userId, data) {
-    const { title, content, tags, urgency } = data;
-    // Urgency có thể dùng để set status hoặc prefix title
-    const sql = `INSERT INTO posts (user_id, title, content, tags, status) VALUES (?, ?, ?, ?, 'unanswered')`;
-    const [result] = await db.query(sql, [userId, title, content, tags]);
+    const { title, content, tags, image_url } = data; 
+    const sql = `
+      INSERT INTO posts (user_id, title, content, tags, image_url, status) 
+      VALUES (?, ?, ?, ?, ?, 'unanswered')
+    `;
+    const [result] = await db.query(sql, [userId, title, content, tags, image_url]);
     return result.insertId;
   },
 
-  // Tăng lượt xem
+  //TĂNG LƯỢT XEM
   async incrementView(postId) {
     await db.query(`UPDATE posts SET views = views + 1 WHERE id = ?`, [postId]);
   }

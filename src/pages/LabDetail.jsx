@@ -7,8 +7,9 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css'; 
+import ReactQuill from "react-quill-new";
 
-// --- 1. IMPORT CÁC MODULE ĐÃ TÁCH ---
+// --- IMPORT COMPONENTS ---
 import AlgorithmVisualizer from "../components/visualization"; 
 import QuizSection from "../components/lab/QuizSection";
 import CodeChallenge from "../components/lab/CodeChallenge";
@@ -18,7 +19,7 @@ export default function LabDetail() {
   const { algKey } = useParams();
   const navigate = useNavigate();
   
-  // Lấy tài nguyên tĩnh
+  // Lấy tài nguyên tĩnh (Starter Code, Sample Code...)
   const resources = getAlgoResource(algKey); 
   
   // --- STATE DỮ LIỆU ---
@@ -31,8 +32,11 @@ export default function LabDetail() {
   const [activeTab, setActiveTab] = useState("Lý thuyết");
   const [sampleLang, setSampleLang] = useState('cpp');
 
+  // --- STATE CHỌN NGÔN NGỮ CHẤM BÀI ---
+  const [execLangId, setExecLangId] = useState(54); 
+
   // --- STATE MÔ PHỎNG ---
-  const [customInput, setCustomInput] = useState("64, 34, 25, 12, 22, 11, 90"); // <--- MỚI: State cho input
+  const [customInput, setCustomInput] = useState("64, 34, 25, 12, 22, 11, 90");
   const [simulationData, setSimulationData] = useState([64, 34, 25, 12, 22, 11, 90]);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -46,7 +50,7 @@ export default function LabDetail() {
   const [codeStatus, setCodeStatus] = useState(null);
   const [codeFeedback, setCodeFeedback] = useState(null);
 
-  // 1. Fetch API
+  // 1. Fetch dữ liệu bài học
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -60,6 +64,8 @@ export default function LabDetail() {
         if (data.success) {
             if (data.data.isLocked) { setIsLocked(true); return; }
             setAlgorithm(data.data);
+            
+            // Set code mặc định (C++)
             setUserCode(resources.starterCode['cpp']); 
             
             if (data.data.user_details) {
@@ -80,10 +86,9 @@ export default function LabDetail() {
     fetchData();
   }, [algKey]); 
 
-  // Reset state mô phỏng khi chuyển tab hoặc đổi bài
+  // Reset state mô phỏng khi đổi bài
   useEffect(() => {
     setIsPlaying(false);
-    // Reset về dữ liệu mặc định khi đổi bài
     const defaultData = [64, 34, 25, 12, 22, 11, 90];
     setSimulationData(defaultData);
     setCustomInput(defaultData.join(", "));
@@ -91,16 +96,14 @@ export default function LabDetail() {
 
   // --- HANDLERS ---
   
-  // Xử lý nạp dữ liệu từ Input
   const handleLoadSimulationData = () => {
-    // Tách chuỗi bằng dấu phẩy, chuyển thành số, lọc bỏ giá trị không hợp lệ
     const arr = customInput.split(',')
         .map(n => parseInt(n.trim()))
         .filter(n => !isNaN(n));
     
     if (arr.length > 0) {
-        setSimulationData(arr); // Cập nhật dữ liệu để vẽ lại
-        setIsPlaying(false);    // Dừng nếu đang chạy
+        setSimulationData(arr); 
+        setIsPlaying(false);   
     } else {
         alert("Vui lòng nhập các số cách nhau bởi dấu phẩy!");
     }
@@ -152,7 +155,7 @@ export default function LabDetail() {
         const res = await fetch(`http://localhost:5000/api/algorithms/${algKey}/submit-code`, {
             method: 'POST',
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ code: userCode, language_id: 54 })
+            body: JSON.stringify({ code: userCode, language_id: execLangId })
         });
         
         if (res.status === 401) throw new Error("TOKEN_EXPIRED");
@@ -162,13 +165,16 @@ export default function LabDetail() {
             setCodeStatus('success');
             setCodeFeedback(result);
         } else {
-            setCodeStatus('failed');
-            setCodeFeedback({ message: result.message });
+            setCodeStatus('failed'); 
+            setCodeFeedback(result); 
         }
     } catch (err) {
         if (err.message === "TOKEN_EXPIRED") {
              alert("Hết phiên đăng nhập!"); localStorage.removeItem("accessToken"); navigate('/login');
-        } else setCodeStatus('error');
+        } else {
+            setCodeStatus('error');
+            setCodeFeedback({ message: "Lỗi kết nối server." });
+        }
     }
   };
 
@@ -194,9 +200,21 @@ export default function LabDetail() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
-        {/* TAB 1: LÝ THUYẾT */}
+        {/* TAB 1: LÝ THUYẾT (Giữ nguyên fix cũ) */}
         {activeTab === "Lý thuyết" && (
-           <div className="prose prose-invert max-w-none bg-slate-900/50 p-8 rounded-2xl border border-slate-800 prose-code:before:content-none prose-code:after:content-none">
+           <div className={`
+               prose prose-invert max-w-none 
+               bg-slate-900/50 p-8 rounded-2xl border border-slate-800
+               prose-code:before:content-none 
+               prose-code:after:content-none
+               prose-code:bg-slate-800 
+               prose-code:px-1.5 
+               prose-code:py-0.5 
+               prose-code:rounded-md 
+               prose-code:font-mono 
+               prose-code:text-blue-300
+               prose-code:font-normal
+           `}>
               <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>{algorithm.theory}</ReactMarkdown>
            </div>
         )}
@@ -204,9 +222,7 @@ export default function LabDetail() {
         {/* TAB 2: MÔ PHỎNG */}
         {activeTab === "Mô phỏng" && (
            <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
-              {/* Cột trái: Visualizer & Controls */}
               <div className="flex-1 bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col">
-                  {/* Header Controls */}
                   <div className="flex justify-between mb-4">
                       <h3 className="font-bold flex gap-2"><Activity/> Visualizer</h3>
                       <div className="flex gap-2">
@@ -214,35 +230,14 @@ export default function LabDetail() {
                         <button onClick={()=>{setIsPlaying(false); setSimulationData([...simulationData])}} className="bg-slate-800 p-2 rounded hover:bg-slate-700 transition"><RotateCcw size={16}/></button>
                       </div>
                   </div>
-
-                  {/* Vùng hiển thị Visualizer */}
                   <div className="flex-1 border border-slate-800/50 rounded-xl overflow-hidden mb-4 bg-slate-950/50 relative flex items-center justify-center">
-                      <AlgorithmVisualizer 
-                          algKey={algKey} 
-                          isPlaying={isPlaying} 
-                          data={simulationData} 
-                          onFinish={()=>setIsPlaying(false)}
-                      />
+                      <AlgorithmVisualizer algKey={algKey} isPlaying={isPlaying} data={simulationData} onFinish={()=>setIsPlaying(false)}/>
                   </div>
-
-                  {/* Vùng nhập liệu (ĐÃ THÊM LẠI) */}
                   <div className="flex gap-3">
-                      <input 
-                        value={customInput} 
-                        onChange={(e)=>setCustomInput(e.target.value)} 
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm font-mono focus:outline-none focus:border-blue-500 transition-colors"
-                        placeholder="Nhập mảng số, ví dụ: 5, 2, 9, 1"
-                      />
-                      <button 
-                        onClick={handleLoadSimulationData} 
-                        className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors"
-                      >
-                        Nạp
-                      </button>
+                      <input value={customInput} onChange={(e)=>setCustomInput(e.target.value)} className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-sm font-mono focus:outline-none focus:border-blue-500 transition-colors" placeholder="Nhập mảng số..."/>
+                      <button onClick={handleLoadSimulationData} className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors">Nạp</button>
                   </div>
               </div>
-              
-              {/* Cột phải: Code Viewer */}
               <div className="lg:w-[500px] bg-[#1e1e1e] rounded-2xl border border-slate-800 flex flex-col">
                   <div className="bg-[#252526] px-4 py-2 border-b border-black/40 flex justify-between items-center">
                       <div className="flex gap-2">
@@ -257,9 +252,22 @@ export default function LabDetail() {
            </div>
         )}
 
-        {/* TAB 3: BÀI TẬP */}
+        {/* TAB 3: BÀI TẬP - ĐÃ SỬA LỖI HIỂN THỊ CODE TẠI ĐÂY */}
         {activeTab === "Bài tập" && (
-           <div className="space-y-8">
+           <div className={`
+                space-y-8
+                
+                /* KỸ THUẬT: Target tất cả thẻ code bên trong con của div này */
+                [&_code]:before:content-none 
+                [&_code]:after:content-none
+                [&_code]:bg-slate-800 
+                [&_code]:px-1.5 
+                [&_code]:py-0.5 
+                [&_code]:rounded-md 
+                [&_code]:font-mono 
+                [&_code]:text-blue-300
+                [&_code]:font-normal
+           `}>
               <QuizSection 
                   questions={algorithm.Questions} 
                   userAnswers={quizAnswers} 
@@ -270,13 +278,16 @@ export default function LabDetail() {
                   score={quizScore} 
                   resultDetails={quizDetails} 
               />
+              
               <CodeChallenge 
                   exercises={algorithm.Exercises} 
                   code={userCode} 
                   setCode={setUserCode} 
                   onSubmit={handleSubmitCode} 
                   status={codeStatus} 
-                  feedback={codeFeedback} 
+                  feedback={codeFeedback}
+                  languageId={execLangId}
+                  setLanguageId={setExecLangId}
               />
            </div>
         )}

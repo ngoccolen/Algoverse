@@ -1,12 +1,6 @@
-// backend/src/models/userModel.js
 const db = require('../src/db');
 
 const User = {
-
-  // ==================================================
-  // 1. NHÓM CHỨC NĂNG XÁC THỰC (AUTH)
-  // ==================================================
-
   // Tạo user mới
   async create(username, email, password) {
     const sql = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
@@ -49,7 +43,7 @@ const User = {
     await db.query(sql, [token, expire, email]);
   },
 
-  // Đổi mật khẩu mới (Reset Password)
+  // Đổi mật khẩu mới
   async resetPassword(token, newPassword) {
     const sql = `
       UPDATE users 
@@ -65,18 +59,11 @@ const User = {
   // Login bằng Google
   async findOrCreateGoogleUser(profile) {
     const email = profile.emails[0].value;
-
-    // 1. Check existing account
     let user = await this.findByEmail(email);
     if (user) return user;
-
-    // 2. Create new user
     const username = profile.displayName.replace(/\s+/g, '').toLowerCase() + '_' + profile.id;
     const placeholderPassword = "google_oauth_user"; 
-
     await this.create(username, email, placeholderPassword);
-    
-    // Cập nhật avatar từ Google
     if (profile.photos && profile.photos[0]) {
         await db.query("UPDATE users SET avatar = ? WHERE email = ?", [profile.photos[0].value, email]);
     }
@@ -84,14 +71,10 @@ const User = {
     return await this.findByEmail(email);
   },
 
-  // ==================================================
-  // 2. NHÓM CHỨC NĂNG PROFILE & THỐNG KÊ
-  // ==================================================
-
-  // Lấy thông tin chi tiết + Thống kê giải bài
+  // Lấy thông tin chi tiết 
   async getProfileStats(userId) {
     try {
-        // 1. Lấy thông tin cá nhân cơ bản
+        // 1. Lấy thông tin cá nhân 
         const [users] = await db.query(
             "SELECT id, username, email, avatar, role, bio, location, created_at FROM users WHERE id = ?", 
             [userId]
@@ -99,9 +82,7 @@ const User = {
         
         if (users.length === 0) return null;
         const user = users[0];
-
-        // 2. Thống kê số bài đã giải (Status = Accepted)
-        // Lưu ý: Cột exercise_id trong bảng submissions
+        //Thống kê số bài đã giải 
         const sqlStats = `
             SELECT p.difficulty, COUNT(DISTINCT s.exercise_id) as count
             FROM submissions s
@@ -110,13 +91,10 @@ const User = {
             GROUP BY p.difficulty
         `;
         const [stats] = await db.query(sqlStats, [userId]);
-
-        // 3. Đếm tổng số lần nộp bài
+        // Đếm tổng số lần nộp bài
         const [totalSubs] = await db.query("SELECT COUNT(*) as total FROM submissions WHERE user_id = ?", [userId]);
-
-        // 4. Format dữ liệu trả về
         const solved = { Easy: 0, Medium: 0, Hard: 0, Total: 0 };
-        
+    
         if (stats.length > 0) {
             stats.forEach(row => {
                 if (solved[row.difficulty] !== undefined) {
@@ -133,7 +111,7 @@ const User = {
     }
   },
 
-  // Lấy danh sách hoạt động gần đây (Lịch sử nộp bài)
+  // Lấy danh sách hoạt động gần đây 
   async getRecentActivity(userId) {
       const sql = `
         SELECT s.id, s.status, s.submitted_at as created_at, p.title, p.difficulty
@@ -147,38 +125,19 @@ const User = {
       return rows;
   },
 
-  // [MỚI] Lấy thống kê hoạt động 7 ngày gần nhất (Cho biểu đồ cột)
-  async getActivityStats(userId) {
-      const sql = `
-        SELECT DATE_FORMAT(submitted_at, '%Y-%m-%d') as date, COUNT(*) as count
-        FROM submissions
-        WHERE user_id = ? 
-          AND submitted_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-        GROUP BY date
-        ORDER BY date ASC
-      `;
-      const [rows] = await db.query(sql, [userId]);
-      return rows;
-  },
-
-  // ==================================================
-  // 3. NHÓM CHỨC NĂNG CẬP NHẬT
-  // ==================================================
-
-  // Cập nhật Profile (Bio, Location, Avatar)
+  // Cập nhật Profile 
   async updateProfile(userId, data) {
     const { bio, location, avatar } = data;
-    
+  
     let sql = "UPDATE users SET ";
-    const params = [];
+    const arams = [];
     const fields = [];
 
-    // Chỉ update những trường người dùng gửi lên
     if (bio !== undefined) { fields.push("bio = ?"); params.push(bio); }
     if (location !== undefined) { fields.push("location = ?"); params.push(location); }
     if (avatar !== undefined) { fields.push("avatar = ?"); params.push(avatar); }
 
-    if (fields.length === 0) return true; // Không có gì thay đổi
+    if (fields.length === 0) return true; 
 
     sql += fields.join(", ") + " WHERE id = ?";
     params.push(userId);
@@ -187,10 +146,6 @@ const User = {
     return true;
   },
 
-  // Đổi mật khẩu (User chủ động đổi trong Settings)
-  async changePassword(userId, newHashedPassword) {
-      await db.query("UPDATE users SET password = ? WHERE id = ?", [newHashedPassword, userId]);
-  }
 };
 
 module.exports = User;

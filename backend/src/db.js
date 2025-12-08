@@ -1,6 +1,4 @@
-// THAY THẾ TOÀN BỘ FILE: ./src/db.js
 const mysql = require("mysql2");
-// Đảm bảo file .env ở thư mục gốc (ngang hàng package.json)
 require("dotenv").config({ path: __dirname + "/../.env" }); 
 
 const db = mysql.createPool({
@@ -9,7 +7,7 @@ const db = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10, // Quản lý 10 kết nối
+  connectionLimit: 10, 
   queueLimit: 0,
 });
 
@@ -25,5 +23,4 @@ db.getConnection((err, connection) => {
   }
 });
 
-// Xuất ra pool, thêm .promise() để dùng async/await
 module.exports = db.promise();

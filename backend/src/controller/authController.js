@@ -1,13 +1,9 @@
-// authController.js
-const db = require("../db"); // Đảm bảo đường dẫn này đúng với cấu trúc dự án của bạn
+const db = require("../db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const sendEmail = require("../utils/sendEmail"); // Đảm bảo bạn có file utils/sendEmail
+const sendEmail = require("../utils/sendEmail"); 
 
-// ============================
-// Helper: Generate Tokens
-// ============================
 const generateTokens = (user) => {
     const accessToken = jwt.sign(
         { id: user.id, username: user.username },
@@ -24,17 +20,13 @@ const generateTokens = (user) => {
     return { accessToken, refreshToken };
 };
 
-// ============================
-// REGISTER
-// ============================
+
 exports.register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
         if (!username || !email || !password)
             return res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ thông tin." });
-
-        // 1. Kiểm tra tồn tại
         const [exist] = await db.query(
             "SELECT * FROM users WHERE email = ? OR username = ?",
             [email, username]
@@ -42,20 +34,12 @@ exports.register = async (req, res) => {
 
         if (exist.length > 0)
             return res.status(400).json({ success: false, message: "Email hoặc Username đã tồn tại!" });
-
-        // 2. Hash password
         const hashed = await bcrypt.hash(password, 10);
-
-        // 3. Tạo Avatar mặc định theo tên
         const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff`;
-
-        // 4. Insert vào DB
         const [result] = await db.query(
             "INSERT INTO users (username, email, password, avatar) VALUES (?, ?, ?, ?)",
             [username, email, hashed, defaultAvatar]
         );
-
-        // 5. Tạo object user để trả về
         const newUser = {
             id: result.insertId,
             username: username,
@@ -64,11 +48,7 @@ exports.register = async (req, res) => {
             xp: 0,
             level: 1
         };
-
-        // 6. Tạo Tokens
         const tokens = generateTokens(newUser);
-
-        // 7. Trả về kết quả
         res.json({
             success: true,
             message: "Đăng ký thành công!",
@@ -82,34 +62,23 @@ exports.register = async (req, res) => {
     }
 };
 
-// ============================
-// LOGIN (ĐÃ SỬA LỖI)
-// ============================
+
 exports.login = async (req, res) => {
     try {
-        // --- QUAN TRỌNG: Nhận biến 'username' từ Frontend gửi lên ---
         const { username, password } = req.body;
-
-        // Tìm user bằng username HOẶC email (Dùng biến 'username' cho cả 2 điều kiện)
         const [rows] = await db.query(
             "SELECT * FROM users WHERE email = ? OR username = ?", 
             [username, username]
         );
-
         if (rows.length === 0)
             return res.status(400).json({ success: false, msg: "Tài khoản không tồn tại!" });
 
         const user = rows[0];
-
-        // So sánh mật khẩu
         const check = await bcrypt.compare(password, user.password);
         if (!check)
             return res.status(400).json({ success: false, msg: "Sai mật khẩu!" });
 
-        // Tạo Tokens
         const tokens = generateTokens(user);
-
-        // Xử lý avatar fallback nếu null
         const avatarUrl = user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff`;
 
         res.json({
@@ -132,9 +101,6 @@ exports.login = async (req, res) => {
     }
 };
 
-// ============================
-// REFRESH TOKEN
-// ============================
 exports.refreshToken = async (req, res) => {
     const { token } = req.body;
 
@@ -157,9 +123,6 @@ exports.refreshToken = async (req, res) => {
     }
 };
 
-// ============================
-// GOOGLE CALLBACK
-// ============================
 exports.googleCallback = async (req, res) => {
     const user = req.user;
 
@@ -169,7 +132,6 @@ exports.googleCallback = async (req, res) => {
         { expiresIn: process.env.JWT_EXPIRE }
     );
 
-    // Redirect về Frontend kèm token
     const redirectUrl =
         `${process.env.FRONTEND_URL}/login-success` +
         `?token=${token}` +
@@ -180,9 +142,7 @@ exports.googleCallback = async (req, res) => {
     return res.redirect(redirectUrl);
 };
 
-// ============================
-// FORGOT PASSWORD (OTP)
-// ============================
+
 exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
@@ -217,9 +177,7 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
-// ============================
-// RESET PASSWORD
-// ============================
+
 exports.resetPassword = async (req, res) => {
     const { email, otp, newPassword } = req.body;
 

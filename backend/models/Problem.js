@@ -1,7 +1,7 @@
 const db = require('../src/db');
 
 module.exports = {
-  // 1. Lấy danh sách bài tập (KÈM NỘI DUNG ĐỀ BÀI)
+  // Lấy danh sách bài tập 
   getByContest: async (contestId) => {
     const sql = `
       SELECT 
@@ -23,53 +23,54 @@ module.exports = {
     return rows;
   },
 
-  // 2. Lấy chi tiết 1 bài tập (dự phòng)
+  // Lấy chi tiết 1 bài tập 
   getById: async (id) => {
     const sql = `SELECT * FROM problems WHERE id = ?`;
     const [rows] = await db.query(sql, [id]);
     return rows[0];
   },
 
-  // 3. Lưu bài cào được vào Database
-  createOrUpdate: async (data) => {
+  createOrUpdate: async (data, forceInsert = false) => {
     try {
-      // Kiểm tra bài đã tồn tại chưa (theo external_id ví dụ 2062A)
-      const checkSql = "SELECT id FROM problems WHERE external_id = ?";
-      const [existing] = await db.query(checkSql, [data.externalId]);
+      if (data.externalId && !forceInsert) {
+        // --- LOGIC CHO BÀI CÀO TỪ EXTERNAL ID (UPDATE HOẶC INSERT) ---
+        const checkSql = "SELECT id FROM problems WHERE external_id = ?";
+        const [existing] = await db.query(checkSql, [data.externalId]);
 
-      if (existing.length > 0) {
-        // [UPDATE]
-        const updateSql = `
-          UPDATE problems 
-          SET title = ?, content_html = ?, sample_input = ?, sample_output = ?, difficulty = ?
-          WHERE id = ?
-        `;
-        await db.query(updateSql, [
-          data.title, 
-          data.contentHtml, 
-          data.sampleInput, 
-          data.sampleOutput, 
-          data.difficulty,
-          existing[0].id
-        ]);
-        return existing[0].id;
-      } else {
-        // [INSERT]
-        const insertSql = `
-          INSERT INTO problems (title, difficulty, content_html, sample_input, sample_output, external_id, external_link)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `;
-        const [result] = await db.query(insertSql, [
-          data.title, 
-          data.difficulty, 
-          data.contentHtml, 
-          data.sampleInput, 
-          data.sampleOutput, 
-          data.externalId, 
-          data.externalLink
-        ]);
-        return result.insertId;
+        if (existing.length > 0) {
+          // [UPDATE]
+          const updateSql = `
+            UPDATE problems 
+            SET title = ?, content_html = ?, sample_input = ?, sample_output = ?, difficulty = ?
+            WHERE id = ?
+          `;
+          await db.query(updateSql, [
+            data.title, 
+            data.contentHtml, 
+            data.sampleInput, 
+            data.sampleOutput, 
+            data.difficulty,
+            existing[0].id
+          ]);
+          return existing[0].id;
+        }
       }
+      
+      const insertSql = `
+        INSERT INTO problems (title, difficulty, content_html, sample_input, sample_output, external_id, external_link)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      const [result] = await db.query(insertSql, [
+        data.title, 
+        data.difficulty, 
+        data.contentHtml, 
+        data.sampleInput, 
+        data.sampleOutput, 
+        data.externalId || null, 
+        data.externalLink || null
+      ]);
+      return result.insertId;
+      
     } catch (error) {
       console.error("Lỗi khi lưu Problem:", error);
       throw error;

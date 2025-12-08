@@ -24,7 +24,7 @@ const Footer = () => {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Code2 className="w-5 h-5 text-white" />
               </div>
-              <span>AlgoMaster</span>
+              <span>Algoverse</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
               Nền tảng học thuật toán và lập trình thi đấu hàng đầu Việt Nam. 
@@ -95,27 +95,22 @@ const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-blue-500 mt-0.5" />
-                <span className="text-sm">Tòa nhà TechHub, Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội</span>
+                <span className="text-sm">Trường Đại Học Công Nghệ Thông Tin và Truyền Thông Việt Hàn</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-blue-500" />
-                <span className="text-sm">+84 (024) 1234 5678</span>
+                <span className="text-sm">+84 0705208238</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-blue-500" />
-                <span className="text-sm">contact@algomaster.vn</span>
+                <span className="text-sm">contact@algoverse.vn</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-          <p>&copy; 2024 AlgoMaster. All rights reserved.</p>
-          <div className="flex items-center space-x-1 mt-4 md:mt-0">
-            <span>Made with</span>
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            <span>by AlgoTeam</span>
-          </div>
+          <p>&copy; 2025 Algoverse. All rights reserved.</p>
         </div>
       </div>
     </footer>

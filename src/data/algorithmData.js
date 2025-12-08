@@ -130,13 +130,80 @@ public class Solution {
 }`,
       python: `# BÀI TẬP: Hãy viết hàm selection_sort hoàn chỉnh
 def selection_sort(arr):
-    # Gợi ý: Tìm phần tử nhỏ nhất và đưa về đầu mảng
+    // Gợi ý: Tìm phần tử nhỏ nhất và đưa về đầu mảng
     pass`
     }
   },
 
   // ====================================================
-  // 3. QUICK SORT (Dự phòng cho tương lai)
+  // 3. INSERTION SORT (Sắp xếp chèn) - MỚI THÊM
+  // ====================================================
+  'insertion-sort': {
+    sampleCode: {
+      cpp: `#include <vector>
+using namespace std;
+
+void insertionSort(vector<int>& arr) {
+    int n = arr.size();
+    for (int i = 1; i < n; i++) {
+        int key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}`,
+      java: `public class Main {
+    public static void insertionSort(int[] arr) {
+        int n = arr.length;
+        for (int i = 1; i < n; ++i) {
+            int key = arr[i];
+            int j = i - 1;
+            while (j >= 0 && arr[j] > key) {
+                arr[j + 1] = arr[j];
+                j = j - 1;
+            }
+            arr[j + 1] = key;
+        }
+    }
+}`,
+      python: `def insertion_sort(arr):
+    for i in range(1, len(arr)):
+        key = arr[i]
+        j = i - 1
+        while j >= 0 and key < arr[j]:
+            arr[j + 1] = arr[j]
+            j -= 1
+        arr[j + 1] = key`
+    },
+    starterCode: {
+      cpp: `// BÀI TẬP: Hãy viết hàm insertionSort hoàn chỉnh
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+void insertionSort(vector<int>& arr) {
+    // Gợi ý: Chèn phần tử vào đúng vị trí trong mảng con đã sắp xếp
+    
+}`,
+      java: `// BÀI TẬP: Hãy viết hàm insertionSort hoàn chỉnh
+public class Solution {
+    public static void insertionSort(int[] arr) {
+        // Gợi ý: Chèn phần tử vào đúng vị trí trong mảng con đã sắp xếp
+        
+    }
+}`,
+      python: `# BÀI TẬP: Hãy viết hàm insertion_sort hoàn chỉnh
+def insertion_sort(arr):
+    # Gợi ý: Chèn phần tử vào đúng vị trí trong mảng con đã sắp xếp
+    pass`
+    }
+  },
+
+  // ====================================================
+  // 4. QUICK SORT (Dự phòng cho tương lai)
   // ====================================================
   'quick-sort': {
     sampleCode: {
@@ -176,7 +243,46 @@ public void quickSort(int[] arr, int low, int high) {
 def quick_sort(arr, low, high):
     pass`
     }
-  }
+  },
+  // ... (các thuật toán cũ)
+
+  // [THÊM MỚI]
+  'linear-search': {
+    sampleCode: {
+      cpp: `int linearSearch(vector<int>& arr, int x) {
+    for (int i = 0; i < arr.size(); i++) {
+        if (arr[i] == x) return i;
+    }
+    return -1;
+}`,
+      java: `public static int linearSearch(int[] arr, int x) {
+    for (int i = 0; i < arr.length; i++) {
+        if (arr[i] == x) return i;
+    }
+    return -1;
+}`,
+      python: `def linear_search(arr, x):
+    for i in range(len(arr)):
+        if arr[i] == x:
+            return i
+    return -1`
+    },
+    starterCode: {
+      cpp: `// Tìm x trong arr. Trả về index hoặc -1
+int linearSearch(vector<int>& arr, int x) {
+    
+}`,
+      java: `// Tìm x trong arr. Trả về index hoặc -1
+public class Solution {
+    public static int linearSearch(int[] arr, int x) {
+        
+    }
+}`,
+      python: `# Tìm x trong arr. Trả về index hoặc -1
+def linear_search(arr, x):
+    pass`
+    }
+  },
 };
 
 /**
@@ -186,6 +292,7 @@ def quick_sort(arr, low, high):
 export const getAlgoResource = (algKey) => {
   const resource = ALGORITHM_RESOURCES[algKey];
   
+  // Fallback nếu không tìm thấy thuật toán
   if (!resource) {
     return {
       sampleCode: { 
