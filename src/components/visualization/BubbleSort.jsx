@@ -26,7 +26,6 @@ const BubbleSort = ({ isPlaying, data, onFinish }) => {
     }
   }, [logs]);
 
-  // XỬ LÝ KHI DỮ LIỆU ĐẦU VÀO THAY ĐỔI 
   useEffect(() => {
     if (data) {
         abortRef.current = true;
@@ -40,7 +39,7 @@ const BubbleSort = ({ isPlaying, data, onFinish }) => {
     }
   }, [data]);
 
-  // --- VẼ BIỂU ĐỒ ---
+  //VẼ BIỂU ĐỒ
   useEffect(() => {
     if (!svgRef.current) return;
     const width = 500;
@@ -85,7 +84,6 @@ const BubbleSort = ({ isPlaying, data, onFinish }) => {
     }
   }, [isPlaying]);
 
-  // --- HÀM KIỂM TRA TẠM DỪNG  ---
   const checkPauseState = async () => {
     while (!isPlayingRef.current && !abortRef.current) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -93,7 +91,7 @@ const BubbleSort = ({ isPlaying, data, onFinish }) => {
     return abortRef.current;
   };
 
-  // --- LOGIC BUBBLE SORT ---
+  //LOGIC BUBBLE SORT
   const runBubbleSort = async () => {
     setSorting(true);
     abortRef.current = false; 

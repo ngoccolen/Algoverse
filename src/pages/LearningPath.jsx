@@ -9,7 +9,7 @@ import {
   Trophy,
   Star
 } from 'lucide-react';
-import Footer from '../components/Footer/Footer'; // [ĐÃ THÊM] Import Footer
+import Footer from '../components/Footer/Footer'; 
 
 export default function LearningPath() {
   const { categoryId } = useParams(); 
@@ -113,12 +113,8 @@ export default function LearningPath() {
   );
 
   return (
-    // [CẬP NHẬT LAYOUT]: Thêm flex-col để đẩy footer xuống dưới cùng
     <div className="min-h-screen bg-slate-900 text-white font-sans flex flex-col">
-      
-      {/* Wrapper nội dung chính (flex-grow để chiếm hết khoảng trống) */}
       <div className="flex-grow pt-20 pb-20">
-        
         {/* Header */}
         <div className="bg-slate-800 border-b border-slate-700 py-8 px-4 relative shadow-xl">
           <div className="max-w-4xl mx-auto">
@@ -143,7 +139,6 @@ export default function LearningPath() {
           </div>
         </div>
 
-        {/* Timeline Content */}
         <div className="max-w-4xl mx-auto px-4 py-10 space-y-12">
           {levels.length === 0 ? (
             <div className="text-center text-slate-500 py-10">
@@ -153,10 +148,8 @@ export default function LearningPath() {
             levels.map((level, lvlIdx) => (
               <div key={level.id} className="relative pl-8 md:pl-0">
                 
-                {/* Level Connector Line */}
                 <div className="hidden md:block absolute left-8 top-14 bottom-0 w-0.5 bg-slate-700 -z-10"></div>
 
-                {/* Level Title */}
                 <div className="mb-6 relative">
                    <div className="hidden md:flex absolute -left-10 top-1 w-8 h-8 rounded-full bg-slate-800 border-2 border-blue-500 items-center justify-center font-bold text-sm text-blue-400 z-10">
                       {lvlIdx + 1}
@@ -165,7 +158,6 @@ export default function LearningPath() {
                    <p className="text-slate-400 text-sm">{level.description}</p>
                 </div>
 
-                {/* Grid of Algorithms */}
                 <div className="grid gap-4">
                   {level.algorithms.map((algo) => (
                     <motion.div
@@ -180,7 +172,6 @@ export default function LearningPath() {
                         }
                       `}
                     >
-                      {/* Background Progress Effect */}
                       {!algo.isLocked && algo.progress > 0 && (
                           <div 
                               className="absolute left-0 top-0 bottom-0 bg-blue-500/10 z-0 transition-all duration-1000" 
@@ -188,7 +179,6 @@ export default function LearningPath() {
                           ></div>
                       )}
 
-                      {/* Icon Status */}
                       <div className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center mr-4 flex-shrink-0 bg-slate-900 border border-slate-700">
                         {algo.progress >= 100 ? (
                             <CheckCircle size={24} className="text-green-400" />
@@ -205,7 +195,6 @@ export default function LearningPath() {
                         )}
                       </div>
 
-                      {/* Content */}
                       <div className="flex-1 min-w-0 relative z-10">
                         <div className="flex justify-between items-start">
                           <h3 className="text-lg font-bold truncate pr-4 group-hover:text-blue-400 transition-colors">
@@ -230,7 +219,6 @@ export default function LearningPath() {
                           </span>
                         </div>
                         
-                        {/* Thanh tiến độ ngang */}
                         {!algo.isLocked && (
                             <div className="mt-3 w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
                                 <div 
@@ -248,8 +236,6 @@ export default function LearningPath() {
           )}
         </div>
       </div>
-
-      {/* [ĐÃ THÊM] Footer ở cuối trang */}
       <Footer />
     </div>
   );

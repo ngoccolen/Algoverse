@@ -5,9 +5,8 @@ import {
   Send, Image as ImageIcon, Hash, Loader2, User, Code, Trash2 
 } from 'lucide-react';
 import axios from 'axios';
-import Footer from '../components/Footer/Footer'; // [ĐÃ THÊM] Import Footer
+import Footer from '../components/Footer/Footer'; 
 
-// --- UTILS ---
 const formatTime = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -28,9 +27,7 @@ const topicColors = {
 
 const API_URL = "http://localhost:5000";
 
-// --- COMPONENTS ---
-
-// 1. MODAL TẠO BÀI VIẾT
+// TẠO BÀI VIẾT
 const CreatePostModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({ title: '', tags: '', content: '' });
   const [imageFile, setImageFile] = useState(null);
@@ -112,7 +109,7 @@ const CreatePostModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-// 2. MODAL CHI TIẾT
+// CHI TIẾT BÀI VIẾT
 const PostDetailModal = ({ post, isOpen, onClose, onVote, onComment, currentUserId, onDelete }) => {
     const [commentText, setCommentText] = useState("");
     const [comments, setComments] = useState([]);
@@ -237,7 +234,6 @@ const PostDetailModal = ({ post, isOpen, onClose, onVote, onComment, currentUser
     );
 };
 
-// 3. POST CARD (THÊM NÚT XÓA)
 const PostCard = ({ post, onVote, onClick, currentUserId, onDelete }) => {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4 relative group">
@@ -315,13 +311,11 @@ export default function CommunityPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentUserId, setCurrentUserId] = useState(null);
 
-    // Lấy ID user từ Token (Decode đơn giản)
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
         if(token) {
             try {
-                // Token thường có dạng header.payload.signature
-                // Ta decode payload (phần giữa)
+                
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 setCurrentUserId(payload.id);
             } catch (e) {
@@ -368,7 +362,7 @@ export default function CommunityPage() {
         }
     };
 
-    // --- LOGIC XÓA BÀI ---
+    // XÓA BÀI VIẾT
     const handleDeletePost = async (postId) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) return;
         
@@ -378,10 +372,8 @@ export default function CommunityPage() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            // Xóa thành công thì loại bỏ khỏi state
             setPosts(prev => prev.filter(p => p.id !== postId));
             
-            // Nếu đang mở modal bài đó thì đóng lại
             if (selectedPost && selectedPost.id === postId) {
                 setSelectedPost(null);
             }
@@ -440,7 +432,6 @@ export default function CommunityPage() {
 
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-            {/* Main Content với flex-grow để đẩy footer xuống */}
             <div className="flex-grow pt-20 px-4 pb-10">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div className="hidden lg:block lg:col-span-1">
@@ -485,7 +476,6 @@ export default function CommunityPage() {
                                         post={post} 
                                         onVote={handleVote} 
                                         onClick={() => setSelectedPost(post)}
-                                        // Truyền props mới xuống
                                         currentUserId={currentUserId}
                                         onDelete={handleDeletePost}
                                     />
@@ -520,7 +510,6 @@ export default function CommunityPage() {
                 onDelete={handleDeletePost}
             />
 
-            {/* [ĐÃ THÊM] Footer ở cuối trang */}
             <Footer />
         </div>
     );

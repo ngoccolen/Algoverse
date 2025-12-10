@@ -1,75 +1,68 @@
-// src/data/algorithmData.js
-
 export const ALGORITHM_RESOURCES = {
-  // ====================================================
-  // 1. BUBBLE SORT (Sắp xếp nổi bọt)
-  // ====================================================
+  // 1. BUBBLE SORT 
   'bubble-sort': {
-    // Code mẫu để hiển thị ở tab "Mô phỏng" (Code Viewer)
+    // Code mẫu để hiển thị ở tab "Mô phỏng" 
     sampleCode: {
       cpp: `#include <iostream>
-#include <vector>
-using namespace std;
+            #include <vector>
+            using namespace std;
 
-void bubbleSort(vector<int>& arr) {
-    int n = arr.size();
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = 0; j < n - i - 1; j++) {
-            if (arr[j] > arr[j + 1]) {
-                swap(arr[j], arr[j + 1]);
-            }
-        }
-    }
-}`,
-      java: `public class Main {
-    public static void bubbleSort(int[] arr) {
-        int n = arr.length;
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = 0; j < n - i - 1; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    int temp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = temp;
+            void bubbleSort(vector<int>& arr) {
+                int n = arr.size();
+                for (int i = 0; i < n - 1; i++) {
+                    for (int j = 0; j < n - i - 1; j++) {
+                        if (arr[j] > arr[j + 1]) {
+                            swap(arr[j], arr[j + 1]);
+                        }
+                    }
                 }
-            }
-        }
-    }
-}`,
+            }`,
+      java: `public class Main {
+                public static void bubbleSort(int[] arr) {
+                    int n = arr.length;
+                    for (int i = 0; i < n - 1; i++) {
+                        for (int j = 0; j < n - i - 1; j++) {
+                            if (arr[j] > arr[j + 1]) {
+                                int temp = arr[j];
+                                arr[j] = arr[j + 1];
+                                arr[j + 1] = temp;
+                            }
+                        }
+                    }
+                }
+            }`,
       python: `def bubble_sort(arr):
-    n = len(arr)
-    for i in range(n - 1):
-        for j in range(n - i - 1):
-            if arr[j] > arr[j + 1]:
-                arr[j], arr[j + 1] = arr[j + 1], arr[j]`
+                n = len(arr)
+                for i in range(n - 1):
+                    for j in range(n - i - 1):
+                        if arr[j] > arr[j + 1]:
+                            arr[j], arr[j + 1] = arr[j + 1], arr[j]`
     },
-    // Code khởi tạo cho Editor ở tab "Bài tập" (Starter Code)
     starterCode: {
       cpp: `// BÀI TẬP: Hãy viết hàm bubbleSort hoàn chỉnh
-#include <vector>
-#include <algorithm>
-using namespace std;
+            #include <vector>
+            #include <algorithm>
+            using namespace std;
 
-void bubbleSort(vector<int>& arr) {
-    // Viết code của bạn tại đây...
-    
-}`,
+            void bubbleSort(vector<int>& arr) {
+                // Viết code của bạn tại đây...
+                
+            }`,
       java: `// BÀI TẬP: Hãy viết hàm bubbleSort hoàn chỉnh
-public class Solution {
-    public static void bubbleSort(int[] arr) {
-        // Viết code của bạn tại đây...
-        
-    }
-}`,
+                    public class Solution {
+                        public static void bubbleSort(int[] arr) {
+                            // Viết code của bạn tại đây...
+                            
+                        }
+                    }`,
       python: `# BÀI TẬP: Hãy viết hàm bubble_sort hoàn chỉnh
-def bubble_sort(arr):
-    # Viết code của bạn tại đây...
-    pass`
-    }
-  },
+                def bubble_sort(arr):
+                    # Viết code của bạn tại đây...
+                    pass`
+                    }
+                },
 
-  // ====================================================
-  // 2. SELECTION SORT (Sắp xếp chọn)
-  // ====================================================
+  // SELECTION SORT 
   'selection-sort': {
     sampleCode: {
       cpp: `#include <iostream>
@@ -135,9 +128,7 @@ def selection_sort(arr):
     }
   },
 
-  // ====================================================
-  // 3. INSERTION SORT (Sắp xếp chèn) - MỚI THÊM
-  // ====================================================
+  // INSERTION SORT 
   'insertion-sort': {
     sampleCode: {
       cpp: `#include <vector>
@@ -202,9 +193,7 @@ def insertion_sort(arr):
     }
   },
 
-  // ====================================================
-  // 4. QUICK SORT (Dự phòng cho tương lai)
-  // ====================================================
+  // 4. QUICK SORT
   'quick-sort': {
     sampleCode: {
       cpp: `// Quick Sort Implementation (C++)
@@ -244,9 +233,7 @@ def quick_sort(arr, low, high):
     pass`
     }
   },
-  // ... (các thuật toán cũ)
 
-  // [THÊM MỚI]
   'linear-search': {
     sampleCode: {
       cpp: `int linearSearch(vector<int>& arr, int x) {
@@ -285,14 +272,10 @@ def linear_search(arr, x):
   },
 };
 
-/**
- * Hàm lấy tài nguyên thuật toán an toàn.
- * Tránh lỗi crash trang web nếu algKey không tồn tại.
- */
+
 export const getAlgoResource = (algKey) => {
   const resource = ALGORITHM_RESOURCES[algKey];
   
-  // Fallback nếu không tìm thấy thuật toán
   if (!resource) {
     return {
       sampleCode: { 

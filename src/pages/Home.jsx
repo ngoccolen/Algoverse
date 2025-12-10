@@ -1,4 +1,3 @@
-// pages/Home.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +8,6 @@ import {
   BarChart3, Brain, ChevronRight, Star, 
   Sparkles, CheckCircle2, Play, Hash, Share2, Layers, GitBranch
 } from 'lucide-react';
-
-// --- Animation Variants ---
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { 
@@ -33,11 +30,9 @@ const scaleIn = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
 };
 
-// --- Sub-components ---
 
-// 1. Hero Section: Clean & Focused
+//Hero Section
 const HeroSection = () => {
-  // Hàm cuộn xuống phần Explore
   const scrollToExplore = () => {
     const element = document.getElementById('explore-section');
     if (element) {
@@ -47,7 +42,6 @@ const HeroSection = () => {
 
   return (
     <section className="relative pt-32 pb-24 px-6 overflow-hidden bg-white">
-      {/* Background Decor */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-blue-400 opacity-20 blur-[100px]"></div>
@@ -57,7 +51,6 @@ const HeroSection = () => {
       <div className="container mx-auto relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           
-          {/* Left Content */}
           <motion.div
             variants={staggerContainer}
             initial="hidden"
@@ -95,7 +88,6 @@ const HeroSection = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right Content: Code Editor Animation */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -151,7 +143,7 @@ const HeroSection = () => {
   );
 };
 
-// 2. Stats Section: Cards Design Xịn Xò
+
 const StatsSection = () => {
   const stats = [
     { icon: Users, label: 'Thành viên', value: '12.5k+', desc: 'Cộng đồng năng động', color: 'bg-blue-50 text-blue-600 border-blue-100' },
@@ -173,7 +165,6 @@ const StatsSection = () => {
               whileHover={{ y: -5 }}
               className={`flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-sm border hover:shadow-xl transition-all duration-300 relative overflow-hidden group`}
             >
-              {/* Background Blob Effect */}
               <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-[100px] opacity-20 transition-transform group-hover:scale-110 ${stat.color.split(' ')[0]}`}></div>
 
               <div className={`w-16 h-16 mb-4 rounded-2xl flex items-center justify-center ${stat.color} border shadow-sm`}>
@@ -190,13 +181,13 @@ const StatsSection = () => {
   );
 };
 
-// 3. Features Section (Giữ nguyên vì đã khá ổn, chỉ chỉnh padding)
+// Features Section 
 const FeaturesSection = () => {
   const features = [
     { icon: Zap, title: 'Chấm bài siêu tốc', description: 'Hệ thống Judge Server đa luồng, trả kết quả < 1s.' },
     { icon: Trophy, title: 'Contest Định Kỳ', description: 'Thi đấu xếp hạng hàng tuần để cọ xát và nhận quà.' },
-    { icon: Brain, title: 'AI Coach Mentor', description: 'Trợ lý AI phân tích lỗi sai và gợi ý tối ưu thuật toán.' },
-    { icon: BarChart3, title: 'Thống kê chi tiết', description: 'Biểu đồ năng lực giúp bạn nhận ra điểm mạnh yếu.' },
+    { icon: Brain, title: 'Bài tập đa dạng', description: 'Hệ thống bài tập đa dạng nâng cao kỹ năng tư duy lập trình' },
+    { icon: BarChart3, title: 'Bảng xếp hạng', description: 'Cạnh tranh và thi đua với những người giỏi nhất' },
     { icon: Users, title: 'Thảo luận sôi nổi', description: 'Hỏi đáp bài tập ngay tại trang làm bài với cộng đồng.' },
     { icon: Code2, title: 'Đa ngôn ngữ', description: 'Hỗ trợ C++, Java, Python, Go, JavaScript.' }
   ];
@@ -233,11 +224,10 @@ const FeaturesSection = () => {
   );
 };
 
-// 4. Explore Algorithms Section (Thay thế Courses)
+//Explore Algorithms Section 
 const ExploreAlgorithmsSection = () => {
   const navigate = useNavigate();
   
-  // Dữ liệu chủ đề thuật toán (Giả lập)
   const topics = [
     { title: "Sắp xếp & Tìm kiếm", count: "15 Bài", icon: Hash, color: "from-blue-500 to-cyan-500" },
     { title: "Đồ thị (Graph)", count: "20 Bài", icon: Share2, color: "from-purple-500 to-pink-500" },
@@ -247,7 +237,6 @@ const ExploreAlgorithmsSection = () => {
 
   return (
     <section id="explore-section" className="py-24 px-6 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-      {/* Decorative bg */}
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
 
       <div className="container mx-auto">
@@ -267,7 +256,6 @@ const ExploreAlgorithmsSection = () => {
           </button>
         </div>
 
-        {/* Topic Cards Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {topics.map((topic, index) => (
             <motion.div
@@ -292,7 +280,6 @@ const ExploreAlgorithmsSection = () => {
           ))}
         </div>
 
-        {/* Big CTA Button */}
         <div className="text-center">
           <motion.button
             onClick={() => navigate('/explore')}
@@ -303,14 +290,12 @@ const ExploreAlgorithmsSection = () => {
             <span>Bắt đầu hành trình của bạn</span>
             <ChevronRight className="w-5 h-5" />
           </motion.button>
-          <p className="mt-4 text-gray-500 text-sm">Miễn phí trọn đời • Không cần thẻ tín dụng</p>
         </div>
       </div>
     </section>
   );
 };
 
-// 5. Testimonials (Giữ nguyên)
 const TestimonialsSection = () => {
   return (
     <section className="py-24 px-6 bg-white border-t border-gray-100">
@@ -342,13 +327,12 @@ const TestimonialsSection = () => {
   );
 };
 
-// 6. CTA Section Final
+// CTA Section 
 const CTASection = () => {
   const navigate = useNavigate();
   return (
     <section className="py-24 px-6 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-700 to-purple-800"></div>
-      {/* Decorative Circles */}
       <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500 opacity-10 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
 
@@ -376,7 +360,6 @@ const CTASection = () => {
   );
 };
 
-// --- Main Page ---
 const HomePage = () => {
   return (
     <div className="min-h-screen flex flex-col font-sans bg-white">

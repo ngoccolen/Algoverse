@@ -15,9 +15,8 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
-  // --- STATE CHO FORGOT PASSWORD MODAL ---
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotStep, setForgotStep] = useState(1); // 1: Nhập Email, 2: Nhập OTP & Pass mới
+  const [forgotStep, setForgotStep] = useState(1); 
   const [forgotEmail, setForgotEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -27,7 +26,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
-  // --- LOGIC ĐĂNG NHẬP ---
+  //LOGIC ĐĂNG NHẬP
   const handleLogin = async () => {
     const newErrors = {};
     if (!username.trim()) newErrors.username = "Vui lòng nhập Username.";
@@ -49,7 +48,12 @@ const Login = () => {
         if (login) login(response.data.user, token);
         window.dispatchEvent(new Event("storage"));
 
-        navigate("/");
+        if (response.data.user.role === 'admin') {
+            navigate("/admin"); // Admin vào trang quản trị
+        } else {
+            navigate("/");      // User thường vào trang chủ
+        }
+
       } else {
         setMessage(response.data.message || "Đăng nhập thất bại");
       }
@@ -64,7 +68,7 @@ const Login = () => {
     window.location.href = "http://localhost:5000/api/auth/google";
   };
 
-  // --- LOGIC QUÊN MẬT KHẨU ---
+  // QUÊN MẬT KHẨU
   const handleSendOtp = async () => {
     if (!forgotEmail) { setForgotMsg("Vui lòng nhập email"); return; }
     setForgotLoading(true);
@@ -103,10 +107,8 @@ const Login = () => {
   };
 
   return (
-    // SỬA Ở ĐÂY: Thêm 'pt-24' (padding-top: 96px) để đẩy nội dung xuống dưới Navbar
     <div className="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 pt-24 overflow-hidden relative">
       
-      {/* Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full blur-3xl" />
         <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="absolute -bottom-32 -right-32 w-96 h-96 bg-gradient-to-br from-blue-400/30 to-purple-400/30 rounded-full blur-3xl" />
@@ -115,7 +117,6 @@ const Login = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-6xl relative z-10">
         <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20">
           <div className="grid md:grid-cols-2 gap-0">
-            {/* Left Side */}
             <div className="hidden md:flex bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-12 flex-col justify-center items-center relative overflow-hidden">
                <div className="absolute inset-0 bg-black/10"></div>
                <div className="relative z-10 text-white text-center">
@@ -127,7 +128,6 @@ const Login = () => {
                </div>
             </div>
 
-            {/* Right Side - Login Form */}
             <div className="p-8 md:p-12 flex flex-col justify-center">
               <div className="mb-8">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">Đăng nhập</h1>
@@ -191,7 +191,6 @@ const Login = () => {
         </div>
       </motion.div>
 
-      {/* --- MODAL FORGOT PASSWORD (Giữ nguyên) --- */}
       <AnimatePresence>
         {showForgotModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

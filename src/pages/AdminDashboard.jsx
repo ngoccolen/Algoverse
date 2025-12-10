@@ -1,211 +1,189 @@
-// src/pages/AdminDashboard.jsx
 import React, { useState, useEffect } from 'react'; 
 import axios from 'axios'; 
-import { Trophy, Code, FileText, PlusCircle, ShieldCheck, BookOpen, Edit, Trash2, List, LogOut, Loader2 } from 'lucide-react'; 
+import { 
+    Trophy, Code, BookOpen, Plus, ShieldCheck, 
+    Edit, Trash2, LogOut, Loader2, 
+    LayoutDashboard, Calendar, Clock, Database,
+    ChevronRight, Save, X, AlignLeft, Type, Layers, FileText, Hash, Globe
+} from 'lucide-react'; 
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const BASE_URL = 'http://localhost:5000/api';
+
+const Label = ({ children }) => (
+    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">
+        {children}
+    </label>
+);
+
+const InputGroup = ({ label, icon: Icon, type = "text", className = "", ...props }) => (
+    <div className="space-y-1">
+        {label && <Label>{label}</Label>}
+        <div className="relative group">
+            {Icon && (
+                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-600 transition-colors pointer-events-none">
+                    <Icon size={20} />
+                </div>
+            )}
+            <input 
+                type={type}
+                className={`w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-xl py-3.5 ${Icon ? 'pl-12' : 'pl-4'} pr-4 outline-none transition-all duration-200 font-medium placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm ${className}`}
+                {...props}
+            />
+        </div>
+    </div>
+);
+
+const TextAreaGroup = ({ label, icon: Icon, className = "", rows = 4, ...props }) => (
+    <div className="space-y-1">
+        {label && <Label>{label}</Label>}
+        <div className="relative group">
+            {Icon && (
+                <div className="absolute left-0 top-4 w-12 flex justify-center text-slate-400 group-focus-within:text-indigo-600 transition-colors pointer-events-none">
+                    <Icon size={20} />
+                </div>
+            )}
+            <textarea 
+                rows={rows}
+                className={`w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-xl py-3.5 ${Icon ? 'pl-12' : 'pl-4'} pr-4 outline-none transition-all duration-200 font-medium placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm min-h-[100px] ${className}`}
+                {...props}
+            />
+        </div>
+    </div>
+);
+
+const SelectGroup = ({ label, icon: Icon, options, className = "", ...props }) => (
+    <div className="space-y-1">
+        {label && <Label>{label}</Label>}
+        <div className="relative group">
+            {Icon && (
+                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 group-focus-within:text-indigo-600 transition-colors pointer-events-none">
+                    <Icon size={20} />
+                </div>
+            )}
+            <select 
+                className={`w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-xl py-3.5 ${Icon ? 'pl-12' : 'pl-4'} pr-10 outline-none transition-all duration-200 appearance-none cursor-pointer font-medium focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm ${className}`}
+                {...props}
+            >
+                {options}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ChevronRight size={16} className="rotate-90" />
+            </div>
+        </div>
+    </div>
+);
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
 
-    // 1. State Forms
     const [contestForm, setContestForm] = useState({ title: '', description: '', startTime: '', durationMinutes: 120 });
-    const [newProblemForm, setNewProblemForm] = useState({ title: '', difficulty: 'Easy', contentHtml: '', sampleInput: '', sampleOutput: '', contestIdToLink: '' }); 
-    const [newExerciseForm, setNewExerciseForm] = useState({ title: '', prompt: '', testcasesJson: '[{"input": "1 2", "output": "3"}]', solution_description: '', algorithm_id: 1 });
+    const [contestProblemForm, setContestProblemForm] = useState({ title: '', difficulty: 'Medium', contentHtml: '', sampleInput: '', sampleOutput: '', contestIdToLink: '' }); 
+    const [practiceForm, setPracticeForm] = useState({ title: '', difficulty: 'Easy', contentHtml: '', sampleInput: '', sampleOutput: '' });
 
-    // 2. State Data Lists (Loading mặc định là true)
     const [availableProblems, setAvailableProblems] = useState([]);
     const [availableContests, setAvailableContests] = useState([]); 
-    const [loadingProblems, setLoadingProblems] = useState(true);
-    const [loadingContests, setLoadingContests] = useState(true); 
+    const [loading, setLoading] = useState(false);
 
-    // 3. State UI/Auth
-    const [activeNav, setActiveNav] = useState('create'); 
+    const [activeNav, setActiveNav] = useState('dashboard'); 
     const [adminUser, setAdminUser] = useState(null);
-
-    // 4. State cho việc chỉnh sửa
+    
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentEditItem, setCurrentEditItem] = useState(null);
     const [editType, setEditType] = useState(''); 
 
+    const getToken = () => localStorage.getItem("accessToken");
 
-    // =======================================================
-    // I. LOGIC AUTH & INIT (ĐÃ TỐI ƯU HÓA)
-    // =======================================================
-    
-    // Hàm tải dữ liệu chung - Xử lý token trực tiếp để tránh lỗi stale state
     const fetchAllData = async (userToken) => {
-        setLoadingProblems(true);
-        setLoadingContests(true);
-
+        setLoading(true);
         try {
-            console.log("🚀 Bắt đầu tải dữ liệu...");
-
-            // 1. Gọi API Contest
-            const resContests = await axios.get(`${BASE_URL}/contests`, { 
-                headers: { Authorization: `Bearer ${userToken}` } 
-            });
-            console.log("✅ Contests:", resContests.data.contests?.length);
+            const [resContests, resProblems] = await Promise.all([
+                axios.get(`${BASE_URL}/contests`, { headers: { Authorization: `Bearer ${userToken}` } }),
+                axios.get(`${BASE_URL}/practice/all-titles`, { headers: { Authorization: `Bearer ${userToken}` } })
+            ]);
             setAvailableContests(resContests.data.contests || []);
-
-            // 2. Gọi API Problems
-            const resProblems = await axios.get(`${BASE_URL}/practice/all-titles`, { 
-                headers: { Authorization: `Bearer ${userToken}` } 
-            });
-            console.log("✅ Problems:", resProblems.data.problems?.length);
             setAvailableProblems(resProblems.data.problems || []);
-
         } catch (e) {
-            console.error("❌ Lỗi tải dữ liệu:", e);
-            
-            // Xử lý lỗi Token hết hạn hoặc không có quyền
-            if (e.response && (e.response.status === 401 || e.response.status === 403)) {
-                alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
-                handleLogout(); // Gọi hàm đăng xuất để xóa token rác
-            }
+            if (e.response?.status === 401) handleLogout();
         } finally {
-            // [QUAN TRỌNG] Luôn tắt loading dù thành công hay thất bại
-            setLoadingProblems(false);
-            setLoadingContests(false);
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        // Lấy Token và User từ LocalStorage mỗi khi load trang
         const storedToken = localStorage.getItem("accessToken");
         const userStr = localStorage.getItem('user');
-        
         let user = null;
         try { user = JSON.parse(userStr); } catch (e) {}
-
-        // Kiểm tra quyền Admin
         if (user && user.role === 'admin' && storedToken) {
             setAdminUser(user);
-            // Gọi hàm tải dữ liệu với token vừa lấy được
             fetchAllData(storedToken);
-        } else {
-            console.warn("⛔ Không tìm thấy User Admin hoặc Token");
-            setLoadingContests(false);
-            setLoadingProblems(false);
-            
-            // Nếu muốn bảo mật hơn: Tự động chuyển hướng về Login
-            // navigate('/login', { replace: true });
         }
     }, [navigate]);
 
-
-    // =======================================================
-    // II. LOGIC TẠO MỚI (CRUD C)
-    // =======================================================
-    
-    const getToken = () => localStorage.getItem("accessToken"); // Helper lấy token
-
+    // 1. Tạo Contest
     const createContest = async () => {
         try {
             await axios.post(`${BASE_URL}/contests/create`, contestForm, { headers: { Authorization: `Bearer ${getToken()}` } });
-            alert("Tạo Contest thành công!");
+            alert("✅ Tạo cuộc thi thành công!");
             setContestForm({ title: '', description: '', startTime: '', durationMinutes: 120 });
-            fetchAllData(getToken()); // Reload dữ liệu
-        } catch (e) {
-            alert("Lỗi tạo contest: " + (e.response?.data?.message || e.message));
-        }
+            fetchAllData(getToken());
+        } catch (e) { alert("Lỗi: " + (e.response?.data?.message || e.message)); }
     };
 
-    const createNewProblem = async () => {
-        const { title, contentHtml, contestIdToLink, ...rest } = newProblemForm;
+    // 2. Tạo Bài Tập cho Contest 
+    const createContestProblem = async () => {
+        const { title, contentHtml, contestIdToLink, ...rest } = contestProblemForm;
+        if (!title || !contentHtml) return alert("Vui lòng nhập tiêu đề và nội dung!");
+        if (!contestIdToLink) return alert("Vui lòng chọn Contest để liên kết!");
 
-        if (!title || !contentHtml) return alert("Vui lòng nhập Tiêu đề và Nội dung Bài Tập.");
-        
         try {
             const token = getToken();
-            // 1. TẠO PROBLEM MỚI
-            const problemPayload = { title, contentHtml, ...rest, isPublic: rest.isPublic ? 1 : 0 };
-            const resProblem = await axios.post(`${BASE_URL}/practice/problems/create`, problemPayload, { headers: { Authorization: `Bearer ${token}` } });
-            const problemId = resProblem.data.problemId;
-
-            // 2. LIÊN KẾT VÀO CONTEST (Nếu chọn)
-            if (contestIdToLink) {
-                const linkPayload = { contestId: contestIdToLink, problemId: problemId, index: 'A', points: 100 };
-                await axios.post(`${BASE_URL}/contests/add-problem`, linkPayload, { headers: { Authorization: `Bearer ${token}` } });
-                alert(`Tạo Bài Tập (ID: ${problemId}) và thêm vào Contest ${contestIdToLink} thành công!`);
-            } else {
-                 alert(`Tạo Bài Tập thành công (ID: ${problemId}).`);
-            }
+            const res = await axios.post(`${BASE_URL}/practice/problems/create`, { title, contentHtml, ...rest, isPublic: 0 }, { headers: { Authorization: `Bearer ${token}` } });
             
-            setNewProblemForm({ title: '', difficulty: 'Easy', contentHtml: '', sampleInput: '', sampleOutput: '', contestIdToLink: '' }); 
-            fetchAllData(token); // Reload dữ liệu
-
-        } catch (e) { 
-            console.error("Lỗi tạo Problem:", e);
-            alert(`Lỗi tạo bài tập: ${e.response?.data?.message || e.message}`); 
-        }
+            await axios.post(`${BASE_URL}/contests/add-problem`, { contestId: contestIdToLink, problemId: res.data.problemId, index: 'A', points: 100 }, { headers: { Authorization: `Bearer ${token}` } });
+            
+            alert(`Đã thêm bài vào Contest!`);
+            setContestProblemForm({ title: '', difficulty: 'Medium', contentHtml: '', sampleInput: '', sampleOutput: '', contestIdToLink: '' }); 
+            fetchAllData(token);
+        } catch (e) { alert("Lỗi: " + (e.response?.data?.message || e.message)); }
     };
 
-    const createNewExercise = async () => {
+    // 3. Tạo Bài Luyện Tập 
+    const createPracticeProblem = async () => {
+        const { title, contentHtml, ...rest } = practiceForm;
+        if (!title || !contentHtml) return alert("Vui lòng nhập tiêu đề và nội dung!");
+
         try {
-            await axios.post(`${BASE_URL}/practice/exercises/create`, newExerciseForm, { headers: { Authorization: `Bearer ${getToken()}` } });
-            alert("Tạo Bài Luyện Tập thành công!");
-            setNewExerciseForm({ title: '', prompt: '', testcasesJson: '[]', solution_description: '', algorithm_id: 1 });
-        } catch (e) {
-            alert("Lỗi tạo bài tập: " + (e.response?.data?.message || e.message));
-        }
+            const token = getToken();
+            await axios.post(`${BASE_URL}/practice/problems/create`, { title, contentHtml, ...rest, isPublic: 1 }, { headers: { Authorization: `Bearer ${token}` } });
+            
+            alert(`Đã thêm bài vào kho Luyện Tập!`);
+            setPracticeForm({ title: '', difficulty: 'Easy', contentHtml: '', sampleInput: '', sampleOutput: '' });
+            fetchAllData(token);
+        } catch (e) { alert("Lỗi: " + (e.response?.data?.message || e.message)); }
     };
 
-
-    // =======================================================
-    // III. LOGIC SỬA & XÓA (UPDATE/DELETE)
-    // =======================================================
-
-    const editItem = (type, item) => {
-        const itemData = {
-            ...item,
-            startTime: type === 'Contest' && item.startTime ? new Date(item.startTime).toISOString().slice(0, 16) : '',
-            isPublic: item.isPublic === 1 || item.isPublic === true 
-        };
-        setCurrentEditItem(itemData);
-        setEditType(type);
-        setIsEditModalOpen(true);
-    };
-
-    const handleEditSubmit = async () => {
+    const updateItem = async () => {
         if (!currentEditItem) return;
         try {
             const token = getToken();
-            const url = editType === 'Contest' 
-                ? `${BASE_URL}/contests/${currentEditItem.id}` 
-                : `${BASE_URL}/practice/problems/${currentEditItem.id}`;
-            
+            const url = editType === 'Contest' ? `${BASE_URL}/contests/${currentEditItem.id}` : `${BASE_URL}/practice/problems/${currentEditItem.id}`;
             await axios.put(url, currentEditItem, { headers: { Authorization: `Bearer ${token}` } });
-            
-            alert(`Cập nhật ${editType} thành công!`);
+            alert(`Cập nhật thành công!`);
             setIsEditModalOpen(false);
-            fetchAllData(token); // Reload dữ liệu
-
-        } catch (e) {
-            alert("Lỗi cập nhật: " + (e.response?.data?.message || e.message));
-        }
+            fetchAllData(token);
+        } catch (e) { alert("Lỗi: " + (e.response?.data?.message || e.message)); }
     };
 
     const deleteItem = async (type, id) => {
-        if (!window.confirm(`Bạn có chắc muốn xóa ${type} ID: ${id}?`)) return;
-        
+        if (!window.confirm(`Bạn chắc chắn muốn xóa ${type} này?`)) return;
         try {
-            const token = getToken();
-            const url = type === 'Contest' 
-                ? `${BASE_URL}/contests/${id}` 
-                : `${BASE_URL}/practice/problems/${id}`;
-
-            await axios.delete(url, { headers: { Authorization: `Bearer ${token}` } });
-            
-            alert(`Xóa ${type} thành công!`);
-            // Cập nhật state UI ngay lập tức để cảm giác nhanh hơn
-            if (type === 'Contest') setAvailableContests(prev => prev.filter(i => i.id !== id));
-            else setAvailableProblems(prev => prev.filter(i => i.id !== id));
-            
-        } catch (e) {
-            alert("Lỗi xóa: " + (e.response?.data?.message || e.message));
-        }
+            const url = type === 'Contest' ? `${BASE_URL}/contests/${id}` : `${BASE_URL}/practice/problems/${id}`;
+            await axios.delete(url, { headers: { Authorization: `Bearer ${getToken()}` } });
+            fetchAllData(getToken());
+        } catch (e) { alert("Lỗi xóa: " + (e.response?.data?.message || e.message)); }
     };
 
     const handleLogout = () => {
@@ -213,311 +191,338 @@ export default function AdminDashboard() {
         localStorage.removeItem("user");
         navigate("/login", { replace: true }); 
     };
-
-
-    // =======================================================
-    // IV. RENDER UI
-    // =======================================================
-
-    const navItems = [
-        { id: 'create', icon: PlusCircle, label: 'Tạo Mới' },
-        { id: 'management', icon: List, label: 'Quản Lý' },
-    ];
-
-    const renderCreateContent = () => (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* 1. Form Tạo Contest */}
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-4 flex items-center gap-3"><Trophy size={24} className="text-white"/><h2 className="text-xl font-bold text-white">1. Tạo Cuộc Thi</h2></div>
-                <div className="p-6 space-y-4">
-                    <input className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Tên cuộc thi" value={contestForm.title} onChange={e => setContestForm({...contestForm, title: e.target.value})} />
-                    <textarea className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Mô tả" value={contestForm.description} onChange={e => setContestForm({...contestForm, description: e.target.value})} rows="2"/>
-                    <div className="space-y-3">
-                        <label className="text-sm text-slate-600 font-medium">Thời gian bắt đầu</label>
-                        <input type="datetime-local" className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setContestForm({...contestForm, startTime: e.target.value})} />
-                        <div className="flex gap-3 items-center">
-                            <label className="text-sm text-slate-600 font-medium w-32">Thời lượng (phút)</label>
-                            <input type="number" className="flex-1 border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="120" value={contestForm.durationMinutes} onChange={e => setContestForm({...contestForm, durationMinutes: parseInt(e.target.value) || 0})} />
-                        </div>
-                    </div>
-                    <button onClick={createContest} className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                        <PlusCircle size={20}/> Tạo Contest
-                    </button>
+    
+    // A. Trang Tạo Contest
+    const renderCreateContestPage = () => (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+                <div className="mb-8 border-b border-slate-100 pb-6">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><Trophy size={24}/></div>
+                        Tạo Cuộc Thi Mới
+                    </h2>
+                    <p className="text-slate-500 mt-1 ml-12">Lên lịch và thiết lập thông tin cho kỳ thi.</p>
                 </div>
-            </div>
 
-            {/* 2. Form Tạo Bài Tập Contest */}
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 flex items-center gap-3"><FileText size={24} className="text-white"/><h2 className="text-xl font-bold text-white">2. Tạo Bài Tập Contest</h2></div>
-                <div className="p-6 space-y-4">
-                    <p className="text-sm text-slate-500 mb-2">Tạo bài tập và tùy chọn thêm vào Contest.</p>
+                <div className="space-y-6">
+                    <InputGroup icon={Type} label="Tên cuộc thi" placeholder="VD: Weekly Contest #12" value={contestForm.title} onChange={e => setContestForm({...contestForm, title: e.target.value})} />
+                    <TextAreaGroup icon={AlignLeft} label="Mô tả / Nội quy" placeholder="Nhập nội dung mô tả..." value={contestForm.description} onChange={e => setContestForm({...contestForm, description: e.target.value})} rows={4} />
                     
-                    <select 
-                        className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white" 
-                        value={newProblemForm.contestIdToLink} 
-                        onChange={e => setNewProblemForm({...newProblemForm, contestIdToLink: e.target.value})}
-                        disabled={loadingContests}
-                    >
-                        <option value="">{loadingContests ? "Đang tải Contest..." : "Chọn Contest để thêm (Tùy chọn)"}</option>
-                        {availableContests.map(c => (
-                            <option key={c.id} value={c.id}>{c.id} - {c.title}</option> 
-                        ))}
-                    </select>
-
-                    <input className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Tiêu đề Bài Tập" value={newProblemForm.title} onChange={e => setNewProblemForm({...newProblemForm, title: e.target.value})} />
-                    <select className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white" value={newProblemForm.difficulty} onChange={e => setNewProblemForm({...newProblemForm, difficulty: e.target.value})}><option value="Easy">Dễ</option><option value="Medium">Trung Bình</option><option value="Hard">Khó</option></select>
-                    <textarea className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Nội dung Bài Tập (HTML)" value={newProblemForm.contentHtml} onChange={e => setNewProblemForm({...newProblemForm, contentHtml: e.target.value})} rows="3"/>
-                    <div className="grid grid-cols-2 gap-3">
-                         <textarea className="border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Sample Input" value={newProblemForm.sampleInput} onChange={e => setNewProblemForm({...newProblemForm, sampleInput: e.target.value})} rows="2"/>
-                         <textarea className="border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Sample Output" value={newProblemForm.sampleOutput} onChange={e => setNewProblemForm({...newProblemForm, sampleOutput: e.target.value})} rows="2"/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <InputGroup icon={Calendar} label="Thời gian bắt đầu" type="datetime-local" value={contestForm.startTime} onChange={e => setContestForm({...contestForm, startTime: e.target.value})} className="cursor-pointer"/>
+                        <InputGroup icon={Clock} label="Thời lượng (phút)" type="number" value={contestForm.durationMinutes} onChange={e => setContestForm({...contestForm, durationMinutes: parseInt(e.target.value) || 0})} />
                     </div>
-                    <button onClick={createNewProblem} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                        <Code size={20}/> Tạo & Liên kết Bài Tập
-                    </button>
+
+                    <div className="pt-4">
+                        <button onClick={createContest} className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2">
+                            <Plus size={20} /> Xác Nhận Tạo Contest
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+
+    // Trang Tạo Problem cho CONTEST 
+    const renderCreateContestProblemPage = () => (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto">
+             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+                <div className="mb-8 border-b border-slate-100 pb-6">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                        <div className="p-2 bg-pink-100 text-pink-600 rounded-lg"><Code size={24}/></div>
+                        Thêm Bài Vào Contest
+                    </h2>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <SelectGroup 
+                            icon={Trophy}
+                            label="Chọn Contest" 
+                            value={contestProblemForm.contestIdToLink} 
+                            onChange={e => setContestProblemForm({...contestProblemForm, contestIdToLink: e.target.value})}
+                            options={<>
+                                <option value="">-- Chọn cuộc thi --</option>
+                                {availableContests.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                            </>}
+                            className="border-pink-200"
+                        />
+                        <SelectGroup 
+                            icon={Layers}
+                            label="Độ khó" 
+                            value={contestProblemForm.difficulty} 
+                            onChange={e => setContestProblemForm({...contestProblemForm, difficulty: e.target.value})} 
+                            options={<><option value="Easy">Dễ</option><option value="Medium">Trung bình</option><option value="Hard">Khó</option></>} 
+                        />
+                    </div>
+
+                    <InputGroup icon={Type} label="Tiêu đề bài toán" placeholder="VD: Quy hoạch động cơ bản" value={contestProblemForm.title} onChange={e => setContestProblemForm({...contestProblemForm, title: e.target.value})} />
+                    
+                    <TextAreaGroup icon={FileText} label="Nội dung đề bài" placeholder="" value={contestProblemForm.contentHtml} onChange={e => setContestProblemForm({...contestProblemForm, contentHtml: e.target.value})} rows={6} className="font-mono text-sm" />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <TextAreaGroup label="Input mẫu" placeholder="1 2" value={contestProblemForm.sampleInput} onChange={e => setContestProblemForm({...contestProblemForm, sampleInput: e.target.value})} rows={3} />
+                        <TextAreaGroup label="Output mẫu" placeholder="3" value={contestProblemForm.sampleOutput} onChange={e => setContestProblemForm({...contestProblemForm, sampleOutput: e.target.value})} rows={3} />
+                    </div>
+
+                    <div className="pt-4">
+                        <button onClick={createContestProblem} className="w-full py-3.5 rounded-xl bg-pink-600 text-white font-bold text-lg hover:bg-pink-700 hover:shadow-lg hover:shadow-pink-500/30 transition-all flex items-center justify-center gap-2">
+                            <Plus size={20} /> Thêm Vào Contest
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+
+    // Trang Tạo Practice Problem 
+    const renderCreatePracticePage = () => (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto">
+            <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+                <div className="mb-8 border-b border-slate-100 pb-6">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                        <div className="p-2 bg-orange-100 text-orange-600 rounded-lg"><Globe size={24}/></div>
+                        Thêm Bài Luyện Tập
+                    </h2>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 gap-6">
+                         <SelectGroup 
+                            icon={Layers}
+                            label="Độ khó" 
+                            value={practiceForm.difficulty} 
+                            onChange={e => setPracticeForm({...practiceForm, difficulty: e.target.value})} 
+                            options={<><option value="Easy">Dễ (Easy)</option><option value="Medium">Trung bình (Medium)</option><option value="Hard">Khó (Hard)</option></>} 
+                        />
+                    </div>
+                    
+                    <InputGroup icon={Type} label="Tiêu đề bài tập" value={practiceForm.title} onChange={e => setPracticeForm({...practiceForm, title: e.target.value})} placeholder="VD: Tổng hai số" />
+                    
+                    <TextAreaGroup icon={FileText} label="Nội dung đề bài" value={practiceForm.contentHtml} onChange={e => setPracticeForm({...practiceForm, contentHtml: e.target.value})} rows={6} className="font-mono text-sm" />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <TextAreaGroup label="Input mẫu" placeholder="5" value={practiceForm.sampleInput} onChange={e => setPracticeForm({...practiceForm, sampleInput: e.target.value})} rows={3} />
+                        <TextAreaGroup label="Output mẫu" placeholder="120" value={practiceForm.sampleOutput} onChange={e => setPracticeForm({...practiceForm, sampleOutput: e.target.value})} rows={3} />
+                    </div>
+
+                    <div className="pt-4">
+                        <button onClick={createPracticeProblem} className="w-full py-3.5 rounded-xl bg-orange-500 text-white font-bold text-lg hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-500/30 transition-all flex items-center justify-center gap-2">
+                            <Plus size={20} /> Đăng Bài Luyện Tập
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+
+    const renderManagementPage = () => (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-6">
+                    <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center"><Trophy size={28}/></div>
+                    <div><p className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-1">Tổng Contest</p><h3 className="text-3xl font-bold text-slate-800">{availableContests.length}</h3></div>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-6">
+                    <div className="w-14 h-14 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center"><Code size={28}/></div>
+                    <div><p className="text-slate-500 font-bold uppercase tracking-wider text-xs mb-1">Tổng Bài Tập</p><h3 className="text-3xl font-bold text-slate-800">{availableProblems.length}</h3></div>
                 </div>
             </div>
 
-            {/* 3. Form Tạo Bài Luyện Tập */}
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 flex items-center gap-3"><BookOpen size={24} className="text-white"/><h2 className="text-xl font-bold text-white">3. Tạo Bài Luyện Tập</h2></div>
-                 <div className="p-6 space-y-4">
-                    <p className="text-sm text-slate-500">Tạo bài tập cho trang Luyện Tập (bảng Exercises).</p>
-                    <input className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Tiêu đề Bài Tập" value={newExerciseForm.title} onChange={e => setNewExerciseForm({...newExerciseForm, title: e.target.value})} />
-                    <input className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="ID Thuật toán (Algorithm ID)" value={newExerciseForm.algorithm_id} type="number" onChange={e => setNewExerciseForm({...newExerciseForm, algorithm_id: e.target.value})} />
-                    <textarea className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Prompt/Nội dung chính" value={newExerciseForm.prompt} onChange={e => setNewExerciseForm({...newExerciseForm, prompt: e.target.value})} rows="2"/>
-                    <textarea className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" placeholder='Testcases (JSON)' value={newExerciseForm.testcasesJson} onChange={e => setNewExerciseForm({...newExerciseForm, testcasesJson: e.target.value})} rows="2"/>
-                    <button onClick={createNewExercise} className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                        <PlusCircle size={20}/> Tạo Bài Luyện Tập
-                    </button>
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Trophy className="text-indigo-500" size={20}/> Danh Sách Cuộc Thi</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-xs">
+                            <tr><th className="px-6 py-4">ID</th><th className="px-6 py-4">Tên</th><th className="px-6 py-4">Bắt đầu</th><th className="px-6 py-4 text-center">Hành động</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {availableContests.map(c => (
+                                <tr key={c.id} className="hover:bg-slate-50 transition">
+                                    <td className="px-6 py-4 font-mono text-slate-400 font-bold">#{c.id}</td>
+                                    <td className="px-6 py-4 font-semibold text-slate-700">{c.title}</td>
+                                    <td className="px-6 py-4 text-slate-500 font-medium">
+                                        {c.start_time ? new Date(c.start_time).toLocaleString('vi-VN') : '---'}
+                                    </td>
+                                    <td className="px-6 py-4 flex justify-center gap-2">
+                                        <button onClick={() => { 
+                                            setCurrentEditItem({
+                                                ...c, 
+                                                startTime: c.start_time, 
+                                                durationMinutes: c.duration_minutes || 120 
+                                            }); 
+                                            setEditType('Contest'); 
+                                            setIsEditModalOpen(true); 
+                                        }} className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"><Edit size={16}/></button>
+                                        <button onClick={() => deleteItem('Contest', c.id)} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100"><Trash2 size={16}/></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-    );
-
-    const renderManagementContent = () => (
-        <div className="space-y-8">
-            {/* Quản lý Contest */}
-            <h2 className="text-2xl font-bold text-pink-600 flex items-center gap-2"><Trophy/> Quản Lý Contest ({loadingContests ? '...' : availableContests.length} mục)</h2>
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Tên Contest</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Thời gian</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-slate-200">
-                        {loadingContests ? (
-                            <tr><td colSpan="4" className="text-center py-4 text-slate-500"><Loader2 className="animate-spin inline mr-2"/>Đang tải Contest...</td></tr>
-                        ) : availableContests.length === 0 ? (
-                             <tr><td colSpan="4" className="text-center py-4 text-slate-500">Chưa có Contest nào.</td></tr>
-                        ) : availableContests.map(c => (
-                            <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{c.id}</td>
-                                <td className="px-6 py-4 text-sm text-slate-500">{c.title}</td>
-                                <td className="px-6 py-4 text-sm text-slate-500">{new Date(c.startTime).toLocaleString()}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium flex justify-center gap-2">
-                                    <button onClick={() => editItem('Contest', c)} className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-50"><Edit size={18}/></button>
-                                    <button onClick={() => deleteItem('Contest', c.id)} className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50"><Trash2 size={18}/></button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            
+             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="px-8 py-6 border-b border-slate-100"><h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Code className="text-pink-500" size={20}/> Kho Bài Tập</h3></div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-xs">
+                            <tr><th className="px-6 py-4">ID</th><th className="px-6 py-4">Tiêu đề</th><th className="px-6 py-4">Độ khó</th><th className="px-6 py-4 text-center">Hành động</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {availableProblems.map(p => (
+                                <tr key={p.id} className="hover:bg-slate-50 transition">
+                                    <td className="px-6 py-4 font-mono text-slate-400 font-bold">#{p.id}</td>
+                                    <td className="px-6 py-4 font-semibold text-slate-700">{p.title}</td>
+                                    <td className="px-6 py-4"><span className={`px-2 py-1 rounded-md text-xs font-bold ${p.difficulty === 'Easy' ? 'bg-green-100 text-green-700' : p.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{p.difficulty}</span></td>
+                                    <td className="px-6 py-4 flex justify-center gap-2">
+                                        <button onClick={() => { setCurrentEditItem({...p, isPublic: p.isPublic === 1}); setEditType('Problem'); setIsEditModalOpen(true); }} className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"><Edit size={16}/></button>
+                                        <button onClick={() => deleteItem('Problem', p.id)} className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100"><Trash2 size={16}/></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
-            {/* Quản lý Problem */}
-            <h2 className="text-2xl font-bold text-pink-600 pt-8 flex items-center gap-2"><Code/> Quản Lý Bài Tập ({loadingProblems ? '...' : availableProblems.length} mục)</h2>
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Tiêu đề</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Độ khó</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-slate-200">
-                        {loadingProblems ? (
-                            <tr><td colSpan="4" className="text-center py-4 text-slate-500"><Loader2 className="animate-spin inline mr-2"/>Đang tải Problem...</td></tr>
-                        ) : availableProblems.length === 0 ? (
-                             <tr><td colSpan="4" className="text-center py-4 text-slate-500">Kho Problem rỗng.</td></tr>
-                        ) : availableProblems.map(p => (
-                            <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{p.id}</td>
-                                <td className="px-6 py-4 text-sm text-slate-500">{p.title}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${p.difficulty === 'Easy' ? 'bg-green-100 text-green-800' : p.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                                        {p.difficulty}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-start gap-2">
-                                    <button onClick={() => editItem('Problem', p)} className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-50"><Edit size={18}/></button>
-                                    <button onClick={() => deleteItem('Problem', p.id)} className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50"><Trash2 size={18}/></button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        </motion.div>
     );
-
-    const renderMainContent = () => {
-        if (activeNav === 'management') return renderManagementContent();
-        return renderCreateContent();
-    };
 
     const EditModal = () => {
         if (!isEditModalOpen || !currentEditItem) return null;
-
-        const handleInputChange = (e) => {
+        const handleChange = (e) => {
             const { name, value, type, checked } = e.target;
-            const newValue = type === 'checkbox' ? checked : value;
-
-            setCurrentEditItem(prev => ({
-                ...prev,
-                [name]: newValue
-            }));
+            setCurrentEditItem(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
         };
 
         return (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-hidden flex flex-col">
-                    <h3 className="text-2xl font-bold mb-4 text-indigo-600">Sửa {editType} ID: {currentEditItem.id}</h3>
-
-                    {/* FORM CHUNG (Có thanh cuộn) */}
-                    <div className="space-y-4 overflow-y-auto pr-2">
-                        <label className="block text-sm font-medium text-slate-700">Tiêu đề</label>
-                        <input
-                            type="text" name="title" placeholder="Tiêu đề"
-                            value={currentEditItem.title || ''} onChange={handleInputChange}
-                            className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none"
-                        />
-                        {
-                            editType === 'Contest' ? (
-                                <>
-                                    <label className="block text-sm font-medium text-slate-700">Mô tả</label>
-                                    <textarea
-                                        name="description" placeholder="Mô tả"
-                                        value={currentEditItem.description || ''} onChange={handleInputChange}
-                                        className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none" rows="3"
-                                    />
-                                    <label className="block text-sm font-medium text-slate-700">Thời gian bắt đầu</label>
-                                    <input
-                                        type="datetime-local" name="startTime"
-                                        value={currentEditItem.startTime || ''} onChange={handleInputChange}
-                                        className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none"
-                                    />
-                                    <label className="block text-sm font-medium text-slate-700">Thời lượng (phút)</label>
-                                     <input
-                                        type="number" name="durationMinutes"
-                                        value={currentEditItem.durationMinutes || 0} onChange={handleInputChange}
-                                        className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none"
-                                    />
-                                    <label className="block text-sm font-medium text-slate-700">Trạng thái</label>
-                                    <select name="status" value={currentEditItem.status || 'upcoming'} onChange={handleInputChange} className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none">
-                                        <option value="upcoming">Sắp diễn ra</option>
-                                        <option value="ongoing">Đang diễn ra</option>
-                                        <option value="finished">Đã kết thúc</option>
-                                    </select>
-                                </>
-                            ) : (
-                                <>
-                                    <label className="block text-sm font-medium text-slate-700">Độ khó</label>
-                                    <select name="difficulty" value={currentEditItem.difficulty || 'Easy'} onChange={handleInputChange} className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none">
-                                        <option value="Easy">Dễ</option>
-                                        <option value="Medium">Trung Bình</option>
-                                        <option value="Hard">Khó</option>
-                                    </select>
-                                    <label className="block text-sm font-medium text-slate-700">Nội dung (HTML)</label>
-                                    <textarea name="contentHtml" placeholder="Nội dung (HTML)" value={currentEditItem.contentHtml || ''} onChange={handleInputChange} className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none" rows="4" />
-                                    <label className="block text-sm font-medium text-slate-700">Sample Input</label>
-                                    <textarea name="sampleInput" placeholder="Sample Input" value={currentEditItem.sampleInput || ''} onChange={handleInputChange} className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none" rows="2" />
-                                    <label className="block text-sm font-medium text-slate-700">Sample Output</label>
-                                    <textarea name="sampleOutput" placeholder="Sample Output" value={currentEditItem.sampleOutput || ''} onChange={handleInputChange} className="w-full border p-2 rounded-lg focus:ring-indigo-500 outline-none" rows="2" />
-
-                                    <div className="flex items-center gap-2 pt-2">
-                                        <input
-                                            type="checkbox"
-                                            name="isPublic"
-                                            checked={currentEditItem.isPublic === 1 || currentEditItem.isPublic === true}
-                                            onChange={handleInputChange}
-                                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                                        />
-                                        <label className="text-sm text-slate-700">Bài tập công khai (Public)</label>
-                                    </div>
-                                </>
-                            )
-                        }
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                        <h3 className="font-bold text-lg text-slate-800">Chỉnh sửa {editType}</h3>
+                        <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition"><X size={20} className="text-slate-400"/></button>
                     </div>
-
-                    <div className="mt-6 flex justify-end gap-3 flex-shrink-0">
-                        <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 transition font-medium">Hủy</button>
-                        <button onClick={handleEditSubmit} className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition font-bold">Lưu Thay Đổi</button>
+                    <div className="p-6 overflow-y-auto space-y-6 bg-white">
+                        <InputGroup label="Tiêu đề" name="title" value={currentEditItem.title} onChange={handleChange} />
+                        {editType === 'Contest' ? (
+                            <>
+                                <TextAreaGroup label="Mô tả" name="description" value={currentEditItem.description} onChange={handleChange} />
+                                <div className="grid grid-cols-2 gap-6">
+                                    <InputGroup 
+                                        label="Bắt đầu" 
+                                        type="datetime-local" 
+                                        name="startTime" 
+                                        value={currentEditItem.startTime ? new Date(currentEditItem.startTime).toISOString().slice(0, 16) : ''} 
+                                        onChange={handleChange} 
+                                    />
+                                    <InputGroup label="Thời lượng" type="number" name="durationMinutes" value={currentEditItem.durationMinutes} onChange={handleChange} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <SelectGroup label="Độ khó" name="difficulty" value={currentEditItem.difficulty} onChange={handleChange} options={<><option value="Easy">Dễ</option><option value="Medium">Trung bình</option><option value="Hard">Khó</option></>} />
+                                    </div>
+                                    <div className="flex items-end pb-3">
+                                        <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 px-4 py-3.5 rounded-xl hover:border-indigo-300 transition-colors w-full">
+                                            <input type="checkbox" name="isPublic" checked={currentEditItem.isPublic} onChange={handleChange} className="w-5 h-5 accent-indigo-600 rounded" />
+                                            <span className="text-sm font-bold text-slate-700">Công khai</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <TextAreaGroup label="Nội dung (HTML)" name="contentHtml" value={currentEditItem.contentHtml} onChange={handleChange} rows={5} />
+                            </>
+                        )}
+                    </div>
+                    <div className="p-4 border-t border-slate-100 bg-white flex justify-end gap-3">
+                        <button onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 rounded-xl text-slate-600 font-bold hover:bg-slate-100 transition">Hủy</button>
+                        <button onClick={updateItem} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition"><Save size={18}/> Lưu Thay Đổi</button>
                     </div>
                 </div>
             </div>
         );
-    };
+    }
+
+    const navItems = [
+        { kind: 'header', label: 'TỔNG QUAN' },
+        { id: 'dashboard', icon: LayoutDashboard, label: 'Thống Kê & Quản lý' },
+        { kind: 'header', label: 'TẠO MỚI' },
+        { id: 'create-contest', icon: Trophy, label: 'Tạo Cuộc Thi' },
+        { id: 'create-problem', icon: Code, label: 'Thêm Bài Vào Contest' }, 
+        { id: 'create-exercise', icon: Globe, label: 'Thêm Bài Luyện Tập' }, 
+    ];
 
     return (
-        <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
-            
-            {/* Sidebar */}
-            <div className={`w-64 bg-gradient-to-b from-pink-600 to-rose-600 text-white flex flex-col shadow-2xl`}>
-                <div className="p-6 flex items-center justify-start border-b border-white/10">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm"><ShieldCheck size={28} className="text-white"/></div>
-                        <h2 className="font-bold text-xl">Admin Panel</h2>
-                    </div>
+        <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
+            <aside className="w-72 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm">
+                <div className="p-8 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/30"><ShieldCheck size={22} /></div>
+                    <span className="font-extrabold text-xl tracking-tight text-slate-800">Algoverse <span className="text-indigo-600">Admin</span></span>
                 </div>
-
-                <nav className="flex-1 p-4 space-y-2">
-                    {navItems.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveNav(item.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                                activeNav === item.id 
-                                    ? 'bg-white text-pink-600 shadow-lg' 
-                                    : 'text-pink-50 hover:bg-white/10'
-                            }`}
-                        >
-                            <item.icon size={22}/>
-                            <span className="font-medium">{item.label}</span>
-                        </button>
+                
+                <nav className="flex-1 px-6 space-y-1 overflow-y-auto custom-scrollbar">
+                    {navItems.map((item, idx) => (
+                        item.kind === 'header' ? (
+                            <div key={idx} className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-8 mb-3 px-3">{item.label}</div>
+                        ) : (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveNav(item.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 font-bold text-sm group ${
+                                    activeNav === item.id 
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-100' 
+                                        : 'text-slate-500 hover:bg-indigo-50 hover:text-indigo-600'
+                                }`}
+                            >
+                                <item.icon size={20} className={activeNav === item.id ? "text-white" : "text-slate-400 group-hover:text-indigo-600 transition-colors"}/>
+                                {item.label}
+                            </button>
+                        )
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-white/10">
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 p-3 bg-red-600 hover:bg-red-700 rounded-xl font-bold transition-colors shadow-md">
-                        <LogOut size={20}/> Đăng Xuất
-                    </button>
-                    <div className="flex items-center gap-3 p-3 mt-3 bg-white/10 rounded-xl backdrop-blur-sm">
-                        <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center font-bold">A</div>
-                        <div className="flex-1"><p className="font-semibold text-sm">{adminUser?.username || 'Admin'}</p><p className="text-xs text-pink-100">{adminUser?.email || 'admin@accu.com'}</p></div>
+                <div className="p-6 border-t border-slate-100">
+                    <div className="flex items-center gap-3 mb-4 px-2 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-sm font-bold text-indigo-600 shadow-sm">
+                            {adminUser?.username ? adminUser.username.charAt(0).toUpperCase() : 'A'}
+                        </div>
+                        <div className="overflow-hidden">
+                            <p className="text-sm font-bold truncate text-slate-800">{adminUser?.username || 'Đang tải...'}</p>
+                            <p className="text-xs text-slate-400 truncate">Administrator</p>
+                        </div>
                     </div>
+                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl border-2 border-slate-100 text-slate-600 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all">
+                        <LogOut size={18}/> Đăng Xuất
+                    </button>
                 </div>
-            </div>
+            </aside>
 
-            {/* Main Content */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="bg-white px-8 py-5 sticky top-0 z-10 shadow-sm border-b border-slate-200">
-                    <h1 className="text-3xl font-bold text-slate-800">{activeNav === 'create' ? 'Tạo Nội Dung Mới' : 'Quản Lý & Chỉnh Sửa'}</h1>
-                    <p className="text-slate-500 text-sm mt-1">Sử dụng thanh điều hướng bên để chuyển đổi.</p>
-                </div>
+            <main className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]">
+                <header className="h-20 px-8 flex items-center justify-between bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                    <div>
+                         <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+                            {activeNav === 'dashboard' && 'Thống Kê & Quản Lý'}
+                            {activeNav === 'create-contest' && 'Tạo Cuộc Thi Mới'}
+                            {activeNav === 'create-problem' && 'Thêm Bài Vào Contest'}
+                            {activeNav === 'create-exercise' && 'Thêm Bài Luyện Tập'}
+                        </h1>
+    
+                    </div>
+                </header>
 
-                <div className="p-8">
-                    {renderMainContent()}
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    {activeNav === 'dashboard' && renderManagementPage()}
+                    {activeNav === 'create-contest' && renderCreateContestPage()}
+                    {activeNav === 'create-problem' && renderCreateContestProblemPage()}
+                    {activeNav === 'create-exercise' && renderCreatePracticePage()}
                 </div>
-            </div>
-            
-            <EditModal /> 
+            </main>
+
+            <EditModal />
         </div>
     );
 }

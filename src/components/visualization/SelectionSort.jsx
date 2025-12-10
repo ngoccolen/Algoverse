@@ -6,14 +6,9 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
   const svgRef = useRef();
   const logContainerRef = useRef(null); 
   
-  // Dữ liệu mảng
   const [array, setArray] = useState(data || []);
-  // Trạng thái đang chạy
   const [sorting, setSorting] = useState(false);
-  // Logs nhật ký
   const [logs, setLogs] = useState([]); 
-
-  // Mảng trạng thái màu
   const [colors, setColors] = useState([]); 
 
   const addLog = (message, type = 'info') => {
@@ -26,21 +21,19 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
     }
   }, [logs]);
 
-  // --- SỬA LỖI Ở ĐÂY: Lắng nghe sự thay đổi của prop 'data' ---
   useEffect(() => {
     if (data && data.length > 0) {
-        setArray([...data]); // Copy sang mảng mới để React nhận diện thay đổi
+        setArray([...data]);
         setColors(new Array(data.length).fill(0));
         setSorting(false);
         setLogs([{ message: "Dữ liệu mới đã nạp. Nhấn 'Chạy'...", type: 'system' }]);
         
-        // Xóa sạch biểu đồ cũ ngay lập tức để tránh lỗi hiển thị chồng đè
+        // Xóa sạch biểu đồ cũ 
         if (svgRef.current) {
             d3.select(svgRef.current).selectAll('*').remove();
         }
     }
   }, [data]); 
-  // -----------------------------------------------------------
 
   // Vẽ biểu đồ
   useEffect(() => {
@@ -50,10 +43,8 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
     const height = 300;
     const svg = d3.select(svgRef.current);
     
-    // Xóa cũ
     svg.selectAll('*').remove();
 
-    // Scale
     const xScale = d3.scaleBand()
         .domain(array.map((_, i) => i))
         .range([0, width])
@@ -66,13 +57,12 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
 
     const getFillColor = (idx) => {
         const status = colors[idx];
-        if (status === 3) return '#22c55e'; // Xanh lá
-        if (status === 2) return '#eab308'; // Vàng
-        if (status === 1) return '#ef4444'; // Đỏ
-        return '#3b82f6'; // Xanh dương
+        if (status === 3) return '#22c55e'; 
+        if (status === 2) return '#eab308'; 
+        if (status === 1) return '#ef4444'; 
+        return '#3b82f6'; 
     };
 
-    // Vẽ cột (rect)
     svg.selectAll('rect')
       .data(array)
       .join('rect')
@@ -83,7 +73,6 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
       .attr('fill', (_, i) => getFillColor(i))
       .attr('rx', 4);
 
-    // Vẽ số (text)
     svg.selectAll('text')
       .data(array)
       .join('text')
@@ -94,7 +83,7 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
       .attr('font-size', '14px')
       .text(d => d);
 
-  }, [array, colors]); // Vẽ lại khi array hoặc colors thay đổi
+  }, [array, colors]); 
 
   // Chạy thuật toán
   useEffect(() => {
@@ -108,31 +97,29 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
     setLogs([]);
     addLog("Bắt đầu thuật toán Selection Sort...", "system");
 
-    // Copy array từ state hiện tại để thao tác
     let currentArr = [...array];
     const n = currentArr.length;
     let colorState = new Array(n).fill(0);
 
     for (let i = 0; i < n - 1; i++) {
-        // Kiểm tra cờ dừng (nếu người dùng bấm Dừng/Reset giữa chừng)
-        // Tuy nhiên trong React useEffect clean up phức tạp hơn, ở đây ta làm đơn giản
+        
         
         let min_idx = i;
-        colorState[i] = 2; // Min tạm
+        colorState[i] = 2; 
         setColors([...colorState]);
         
         addLog(`Tìm Min từ index [${i}] (${currentArr[i]})...`, "header");
         await new Promise(r => setTimeout(r, 600));
 
         for (let j = i + 1; j < n; j++) {
-            colorState[j] = 1; // Checking
+            colorState[j] = 1; 
             setColors([...colorState]);
             await new Promise(r => setTimeout(r, 300));
 
             if (currentArr[j] < currentArr[min_idx]) {
-                if(min_idx !== i) colorState[min_idx] = 0; // Trả màu cũ
+                if(min_idx !== i) colorState[min_idx] = 0; 
                 min_idx = j;
-                colorState[min_idx] = 2; // Min mới
+                colorState[min_idx] = 2; 
                 addLog(`  > Min mới: ${currentArr[j]}`, "swap");
             } else {
                 colorState[j] = 0;
@@ -144,13 +131,12 @@ const SelectionSort = ({ isPlaying, data, onFinish }) => {
             addLog(`=> Hoán đổi ${currentArr[i]} và ${currentArr[min_idx]}`, "success");
             [currentArr[i], currentArr[min_idx]] = [currentArr[min_idx], currentArr[i]];
             
-            // Cập nhật mảng chính để UI vẽ lại
             setArray([...currentArr]); 
             await new Promise(r => setTimeout(r, 800));
         }
         
         colorState[min_idx] = 0;
-        colorState[i] = 3; // Done
+        colorState[i] = 3; 
         setColors([...colorState]);
     }
     

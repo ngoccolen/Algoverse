@@ -1,4 +1,3 @@
-// pages/PracticeDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MonacoEditor from "@monaco-editor/react";
@@ -7,93 +6,82 @@ import {
   Play, Loader2, Send, Clock, ArrowLeft, RefreshCw, CheckCircle, XCircle, Code 
 } from "lucide-react";
 
-// ======================
-// 1. CODE TEMPLATES (Mẫu code mặc định)
-// ======================
+// Mẫu code mặc định
 const templates = {
   javascript: `// JavaScript (Node.js)
-const fs = require('fs');
-const input = fs.readFileSync(0, 'utf8');
+  const fs = require('fs');
+  const input = fs.readFileSync(0, 'utf8');
 
-function solve(data) {
-  // data là chuỗi input đầu vào
-  // Hãy xử lý và return kết quả
-  return ""; 
-}
+  function solve(data) {
+    // data là chuỗi input đầu vào
+    // Hãy xử lý và return kết quả
+    return ""; 
+  }
 
-if (input) console.log(solve(input));`,
+  if (input) console.log(solve(input));`,
 
   python: `# Python 3
-import sys
+  import sys
 
-def solve():
-    # Đọc toàn bộ input
-    data = sys.stdin.read()
-    
-    # Xử lý logic tại đây
-    
-    # In kết quả
-    print(data)
+  def solve():
+      # Đọc toàn bộ input
+      data = sys.stdin.read()
+      
+      # Xử lý logic tại đây
+      
+      # In kết quả
+      print(data)
 
-if __name__ == '__main__':
-    solve()`,
+  if __name__ == '__main__':
+      solve()`,
 
   cpp: `// C++ (GCC)
-#include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>
+  #include <iostream>
+  #include <string>
+  #include <vector>
+  #include <algorithm>
 
-using namespace std;
+  using namespace std;
 
-int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
+  int main() {
+      ios_base::sync_with_stdio(false);
+      cin.tie(NULL);
 
-    // Viết code tại đây
-    
-    return 0;
-}`
+      // Viết code tại đây
+      
+      return 0;
+  }`
 };
 
-// ======================
-// 2. HELPER: XỬ LÝ HTML NỘI DUNG
-// ======================
+//XỬ LÝ NỘI DUNG
 const processContent = (html) => {
     if (!html) return "";
     let content = html;
-    // Xóa bớt các thẻ thừa nếu cần
     content = content.replace(/<h3>Ví dụ<\/h3>/gi, ""); 
     content = content.replace(/<strong>Ví dụ<\/strong>/gi, "");
     content = content.replace(/Ví dụ:/gi, ""); 
     return content;
 };
 
-// ======================
-// 3. MAIN COMPONENT
-// ======================
 export default function PracticeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // State
   const [problem, setProblem] = useState(null);
   const [history, setHistory] = useState([]);
-  const [language, setLanguage] = useState("cpp"); // Mặc định C++ cho ngầu
+  const [language, setLanguage] = useState("cpp"); 
   const [code, setCode] = useState(templates.cpp);
   
-  const [loading, setLoading] = useState(false);       // Loading khi Submit/Run
-  const [pageLoading, setPageLoading] = useState(true); // Loading khi tải trang
+  const [loading, setLoading] = useState(false);      
+  const [pageLoading, setPageLoading] = useState(true); 
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("editor");
 
   const token = localStorage.getItem("accessToken");
   
-  // Key để lưu nháp code vào localStorage (tránh F5 mất code mới gõ)
   const userIdentifier = token ? token.slice(-10) : "guest";
   const draftKey = `draft_${userIdentifier}_${id}_${language}`;
 
-  // --- EFFECT 1: Load draft từ LocalStorage khi mới vào ---
   useEffect(() => {
     const savedDraft = localStorage.getItem(draftKey);
     if (savedDraft) {
@@ -103,21 +91,18 @@ export default function PracticeDetail() {
     }
   }, [draftKey, language]);
 
-  // --- EFFECT 2: Tải dữ liệu bài tập & Lịch sử ---
   useEffect(() => {
     fetchProblem();
     fetchHistory();
-    // eslint-disable-next-line
   }, [id]);
 
-  // --- EFFECT 3: Tự động lưu nháp khi code thay đổi (Debounce 1s) ---
   useEffect(() => {
     const timer = setTimeout(() => localStorage.setItem(draftKey, code), 1000);
     return () => clearTimeout(timer);
   }, [code, draftKey]);
 
 
-  // --- HÀM 1: Tải chi tiết bài tập (VÀ FILL CODE CŨ) ---
+  // Tải chi tiết bài tập 
   const fetchProblem = async () => {
     try {
       if (!token) {
@@ -130,11 +115,9 @@ export default function PracticeDetail() {
       
       setProblem(res.data);
 
-      // [QUAN TRỌNG] Logic tự động điền code cũ (User Code)
       if (res.data.user_code) {
           console.log("Found old submission code, filling editor...");
           setCode(res.data.user_code);
-          // Nếu bạn muốn lưu luôn vào draft để F5 vẫn còn
           localStorage.setItem(draftKey, res.data.user_code);
       }
 
@@ -146,7 +129,7 @@ export default function PracticeDetail() {
     }
   };
 
-  // --- HÀM 2: Tải lịch sử nộp bài ---
+  // Tải lịch sử nộp bài 
   const fetchHistory = async () => {
     try {
       if (!token) return;
@@ -157,11 +140,11 @@ export default function PracticeDetail() {
     } catch (err) { console.error(err); }
   };
 
-  // --- HÀM 3: Xử lý Chạy thử / Nộp bài ---
+  // Xử lý Chạy thử / Nộp bài
   const handleRun = async (runOnly) => {
     setLoading(true);
     setResult(null);
-    setActiveTab("editor"); // Chuyển tab về console để xem kết quả
+    setActiveTab("editor"); 
     
     try {
       const res = await axios.post(`http://localhost:5000/api/practice/submit/${id}`, {
@@ -172,7 +155,6 @@ export default function PracticeDetail() {
       
       setResult(res.data);
       
-      // Nếu nộp thật (không phải runOnly) thì tải lại lịch sử
       if (!runOnly) fetchHistory();
 
     } catch (err) {
@@ -182,7 +164,6 @@ export default function PracticeDetail() {
     }
   };
 
-  // --- HÀM 4: Reset Code ---
   const handleResetCode = () => {
     if (window.confirm("Bạn có chắc muốn reset code về mặc định không?")) {
       setCode(templates[language]);
@@ -190,14 +171,12 @@ export default function PracticeDetail() {
     }
   };
 
-  // --- RENDER LOADING PAGE ---
   if (pageLoading) return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 className="animate-spin text-purple-500 w-8 h-8"/>
     </div>
   );
 
-  // Kiểm tra xem kết quả trả về có phải thành công hoàn toàn không
   const isResultSuccess = result && (
       result.status === "Accepted" || 
       (result.status === "Test Run" && result.passed_cases === result.total_cases)
@@ -207,7 +186,6 @@ export default function PracticeDetail() {
     <div className="min-h-screen bg-slate-950 text-white pt-24 pb-6 px-4">
       <div className="max-w-[1600px] mx-auto grid lg:grid-cols-3 gap-6 h-[85vh]">
         
-        {/* ================= LEFT PANEL: ĐỀ BÀI ================= */}
         <div className="lg:col-span-1 bg-slate-900 rounded-xl border border-slate-800 flex flex-col overflow-hidden shadow-xl">
           
           {/* Header Đề bài */}
@@ -219,7 +197,6 @@ export default function PracticeDetail() {
               <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 leading-tight">
                 {problem.title}
               </h1>
-              {/* Badge Solved */}
               {problem.solved > 0 && (
                  <div className="flex items-center gap-1 bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/20 text-xs font-bold whitespace-nowrap">
                     <CheckCircle size={12} /> Solved
@@ -241,10 +218,9 @@ export default function PracticeDetail() {
             </div>
           </div>
 
-          {/* Nội dung Đề bài (Scrollable) */}
+          {/* Nội dung Đề bài*/}
           <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
             
-            {/* Render HTML đề bài (Fix lỗi dấu ` của tailwind typography) */}
             <div 
                 className="prose prose-invert prose-sm max-w-none text-gray-300 
                            prose-code:before:content-none prose-code:after:content-none prose-code:bg-slate-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-purple-300"
@@ -295,10 +271,8 @@ export default function PracticeDetail() {
           </div>
         </div>
 
-        {/* ================= RIGHT PANEL: EDITOR & CONSOLE ================= */}
         <div className="lg:col-span-2 flex flex-col gap-4 h-full">
           
-          {/* Editor Toolbar */}
           <div className="bg-slate-900 p-2 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-2 shadow-md">
             <div className="flex items-center gap-3">
                 <select value={language} onChange={(e) => setLanguage(e.target.value)} className="bg-slate-800 border border-slate-700 text-white text-sm rounded px-3 py-1.5 outline-none focus:border-purple-500 transition">
@@ -318,7 +292,6 @@ export default function PracticeDetail() {
             </div>
           </div>
 
-          {/* Monaco Editor */}
           <div className="flex-1 bg-[#1e1e1e] rounded-xl border border-slate-800 overflow-hidden shadow-2xl relative group">
             <MonacoEditor 
                 height="100%" 
@@ -337,7 +310,6 @@ export default function PracticeDetail() {
             />
           </div>
 
-          {/* Console / History Tabs */}
           <div className="h-[35%] bg-slate-900 rounded-xl border border-slate-800 flex flex-col overflow-hidden shadow-xl">
             <div className="flex border-b border-slate-800 bg-slate-950/30">
               <button onClick={() => setActiveTab("editor")} className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2 border-b-2 transition ${activeTab === "editor" ? "border-purple-500 text-white bg-slate-800" : "border-transparent text-gray-500 hover:text-gray-300"}`}><Play size={14}/> Console</button>
@@ -346,7 +318,6 @@ export default function PracticeDetail() {
             
             <div className="p-0 overflow-y-auto custom-scrollbar flex-1 bg-slate-900">
               
-              {/* TAB 1: CONSOLE KẾT QUẢ */}
               {activeTab === "editor" && (
                 <div className="p-4">
                   {!result && !loading && <div className="h-full py-10 flex flex-col items-center justify-center text-gray-600"><Play size={40} className="mb-2 opacity-50"/><p>Chạy code để xem kết quả kiểm thử</p></div>}
@@ -354,7 +325,6 @@ export default function PracticeDetail() {
                   
                   {result && !loading && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      {/* Banner Kết quả Tổng quan */}
                       <div className={`p-4 rounded-lg border flex justify-between items-center shadow-sm ${
                           isResultSuccess 
                           ? "bg-green-500/10 border-green-500/20 text-green-400" 
@@ -375,7 +345,6 @@ export default function PracticeDetail() {
                         </div>
                       </div>
 
-                      {/* Chi tiết từng Test Case */}
                       <div className="space-y-2">
                         {result.results.map((r, i) => (
                           <div key={i} className={`text-sm rounded border overflow-hidden transition ${r.ok ? "border-green-500/20 bg-green-500/5" : "border-red-500/20 bg-red-500/5"}`}>
@@ -384,10 +353,9 @@ export default function PracticeDetail() {
                               <span>{r.status}</span>
                             </div>
                             
-                            {/* Hiển thị lỗi biên dịch/runtime */}
+                            {/* Hiển thị lỗi biên dịch*/}
                             {r.stderr && <div className="p-3 text-red-300 bg-slate-950 font-mono text-xs whitespace-pre-wrap border-t border-red-500/20">{r.stderr}</div>}
                             
-                            {/* Hiển thị chi tiết Input/Output nếu sai và là test public */}
                             {(!r.ok && r.is_public) && (
                                 <div className="p-3 bg-slate-950/50 grid grid-cols-2 gap-3 font-mono text-xs border-t border-red-500/10">
                                     <div className="col-span-2 md:col-span-1"><span className="text-gray-500 font-bold block mb-1">Input</span><code className="text-gray-300 bg-slate-900 p-1 rounded block">{r.input}</code></div>
@@ -403,7 +371,6 @@ export default function PracticeDetail() {
                 </div>
               )}
 
-              {/* TAB 2: LỊCH SỬ NỘP BÀI */}
               {activeTab === "history" && (
                 <div className="p-2 space-y-2">
                   {history.length === 0 ? (

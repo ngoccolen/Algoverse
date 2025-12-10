@@ -15,16 +15,11 @@ export default function LoginSuccess() {
 
     if (token) {
       const user = { id, username, email, avatar };
-
-      // --- SỬA QUAN TRỌNG: Phải là "accessToken" để khớp với cả hệ thống ---
       localStorage.setItem("accessToken", token);
-      
       localStorage.setItem("user", JSON.stringify(user));
 
-      // Dispatch sự kiện để Navbar cập nhật ngay lập tức (giống Register/Login)
       window.dispatchEvent(new Event("storage"));
 
-      // Chuyển hướng
       setTimeout(() => {
           navigate("/"); 
       }, 100);

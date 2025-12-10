@@ -3,23 +3,19 @@ import { motion } from 'framer-motion';
 import { Play, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Footer from '../components/Footer/Footer'; // [ĐÃ THÊM] Import Footer
-
+import Footer from '../components/Footer/Footer'; 
 export default function PracticePage() {
     const navigate = useNavigate();
 
-    // State dữ liệu
     const [problems, setProblems] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // State bộ lọc
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDifficulty, setSelectedDifficulty] = useState('All');
     const [selectedTopic, setSelectedTopic] = useState('All');
 
     useEffect(() => {
         fetchData();
-        // eslint-disable-next-line
     }, []);
 
     async function fetchData() {
@@ -67,10 +63,8 @@ export default function PracticePage() {
     });
 
     return (
-        // [CẬP NHẬT LAYOUT]: Thêm flex-col để đẩy footer xuống dưới cùng
         <div className="min-h-screen bg-gradient-to-b from-indigo-950 to-black text-white flex flex-col font-sans">
             
-            {/* Phần nội dung chính (chiếm khoảng trống còn lại) */}
             <div className="px-5 pt-24 pb-12 flex-grow">
                 <div className="max-w-6xl mx-auto">
 
@@ -128,7 +122,6 @@ export default function PracticePage() {
                         </select>
                     </div>
 
-                    {/* === Loading === */}
                     {loading && (
                         <div className="flex justify-center py-20">
                             <Loader2 className="animate-spin w-10 h-10 text-purple-400" />
@@ -190,8 +183,6 @@ export default function PracticePage() {
                     )}
                 </div>
             </div>
-
-            {/* [ĐÃ THÊM] Footer ở cuối trang */}
             <Footer />
         </div>
     );

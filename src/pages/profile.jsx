@@ -92,11 +92,9 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       
-      {/* Wrapper nội dung chính */}
       <div className="pt-24 pb-12 px-4 flex-grow">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            {/* --- LEFT: USER CARD --- */}
             <div className="lg:col-span-4 space-y-6">
                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 relative">
                     <div className="h-32 bg-gradient-to-r from-blue-600 to-purple-600 relative">
@@ -133,7 +131,6 @@ export default function Profile() {
                     </div>
                 </div>
 
-                {/* --- STATS CARD (ĐƠN GIẢN) --- */}
                 <div className="bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
                     <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Award className="text-yellow-500"/> Thống kê</h3>
                     
@@ -159,7 +156,6 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* --- RIGHT: TABS & CONTENT --- */}
             <div className="lg:col-span-8">
                 <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden min-h-[600px]">
                     <div className="flex border-b border-slate-100">
@@ -174,9 +170,6 @@ export default function Profile() {
                         {activeTab === 'overview' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             
-                                {/* [ĐÃ XÓA BIỂU ĐỒ HOẠT ĐỘNG TẠI ĐÂY] */}
-
-                                {/* 1. LỊCH SỬ THI ĐẤU (Đưa lên đầu) */}
                                 <div>
                                     <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                                         <Trophy className="text-yellow-500"/> Các cuộc thi đã tham gia
@@ -202,8 +195,6 @@ export default function Profile() {
                                         </div>
                                     )}
                                 </div>
-
-                                {/* 2. LỊCH SỬ NỘP BÀI */}
                                 <div>
                                     <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Activity className="text-blue-500"/> Code gần đây</h3>
                                     {activities.length === 0 ? <div className="text-center py-6 text-slate-400 bg-slate-50 border border-dashed rounded-xl">Chưa giải bài nào.</div> : (

@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import Footer from '../components/Footer/Footer'; 
 
-// --- CSS Styles (Giữ nguyên) ---
 const CF_STYLES = `
   .cf-problem-content { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1f2937; font-size: 15px; line-height: 1.6; }
   .cf-problem-content .title { font-size: 1.5rem; font-weight: 800; margin-bottom: 1.5rem; color: #111827; }
@@ -35,14 +34,12 @@ const LANGUAGES = [
   { id: 'javascript', name: 'Node.js (12.14)' } 
 ];
 
-// --- CẤU HÌNH TRẠNG THÁI ---
 const statusConfig = { 
   ongoing: { label: 'Đang diễn ra', bg: 'bg-green-500', text: 'text-green-600', border: 'border-green-200', icon: Zap }, 
   upcoming: { label: 'Sắp diễn ra', bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', icon: Timer }, 
   finished: { label: 'Đã kết thúc', bg: 'bg-slate-500', text: 'text-slate-500', border: 'border-slate-200', icon: CheckCircle } 
 };
 
-// --- Component Card Cuộc Thi ---
 const ContestCard = ({ contest, onClick }) => {
   const config = statusConfig[contest.status] || statusConfig.upcoming;
   const StatusIcon = config.icon;
@@ -82,9 +79,6 @@ const ContestCard = ({ contest, onClick }) => {
   );
 };
 
-// -----------------------------
-// 4. Component Chi Tiết Cuộc Thi
-// -----------------------------
 const ContestDetail = ({ contest, onBack }) => {
   const [activeProblem, setActiveProblem] = useState(null); 
   const [activeTab, setActiveTab] = useState('problems');
@@ -97,11 +91,9 @@ const ContestDetail = ({ contest, onBack }) => {
   const [problemsList, setProblemsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- STATE COUNTDOWN ---
   const [isStarted, setIsStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState({});
 
-  // State Editor & Submission
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('cpp');
   const [submitting, setSubmitting] = useState(false);
@@ -109,7 +101,6 @@ const ContestDetail = ({ contest, onBack }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [runResult, setRunResult] = useState(null);
 
-  // 1. Tính toán thời gian
   const calculateTimeLeft = () => {
     const difference = new Date(contest.start_time) - new Date();
     if (difference > 0) {
@@ -123,14 +114,12 @@ const ContestDetail = ({ contest, onBack }) => {
     return {};
   };
 
-  // 2. Effect: Check Registration & Setup Timer
+  //kiểm tra đăng ký và tải đề thi khi cuộc thi bắt đầu
   useEffect(() => {
-    // Inject CSS
     const styleSheet = document.createElement("style");
     styleSheet.innerText = CF_STYLES;
     document.head.appendChild(styleSheet);
     
-    // Check Registration
     const token = localStorage.getItem("accessToken");
     if(token) {
         fetch(`http://localhost:5000/api/contests/${contest.id}/check-registration`, { headers: { 'Authorization': `Bearer ${token}` } })
@@ -142,7 +131,6 @@ const ContestDetail = ({ contest, onBack }) => {
         .catch(() => setCheckingReg(false));
     } else { setCheckingReg(false); }
 
-    // TIMER LOGIC
     const timer = setInterval(() => {
         const remaining = calculateTimeLeft();
         setTimeLeft(remaining);
@@ -165,7 +153,6 @@ const ContestDetail = ({ contest, onBack }) => {
     };
   }, [contest.id, isRegistered]); 
 
-  // Effect: Load Leaderboard
   useEffect(() => {
       if(activeTab === 'leaderboard') {
           fetch(`http://localhost:5000/api/contests/${contest.id}/leaderboard`)
@@ -209,7 +196,6 @@ const ContestDetail = ({ contest, onBack }) => {
     try { const res = await fetch('http://localhost:5000/api/submissions/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ problemId: activeProblem.id, language, source: code, contestId: contest.id }) }); const data = await res.json(); setSubmitResult(data); } catch (error) { alert("Lỗi!"); } finally { setSubmitting(false); }
   };
 
-  // VIEW 1: LANDING PAGE
   if (checkingReg || !isRegistered) {
       return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto mt-12 pb-20">
@@ -266,7 +252,6 @@ const ContestDetail = ({ contest, onBack }) => {
       );
   }
 
-  // VIEW 2: WAITING ROOM
   if (isRegistered && !isStarted) {
     return (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-4xl mx-auto mt-20 pb-20 text-center">
@@ -306,7 +291,6 @@ const ContestDetail = ({ contest, onBack }) => {
     );
   }
 
-  // VIEW 3: WORKSTATION
   if (activeProblem) {
     return (
       <div className="h-[calc(100vh-90px)] flex flex-col bg-slate-50">
@@ -329,10 +313,8 @@ const ContestDetail = ({ contest, onBack }) => {
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${activeProblem.difficulty === 'Easy' ? 'bg-green-100 text-green-700' : activeProblem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{activeProblem.difficulty}</span>
                     </div>
                     
-                    {/* --- PROBLEM CONTENT --- */}
                     <div className="cf-problem-content" dangerouslySetInnerHTML={{ __html: activeProblem.content_html }} />
 
-                    {/* --- INPUT / OUTPUT SECTION --- */}
                     {(activeProblem.sample_input || activeProblem.sample_output) && (
                       <div className="mt-8 space-y-6">
                         {activeProblem.sample_input && (
@@ -409,7 +391,6 @@ const ContestDetail = ({ contest, onBack }) => {
     );
   }
 
-  // VIEW 4: DASHBOARD
   if (isRegistered && isStarted) {
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 max-w-7xl mx-auto px-4 mt-8 pb-20">
@@ -438,20 +419,18 @@ const ContestDetail = ({ contest, onBack }) => {
                             key={problem.id} 
                             onClick={() => {
                                 setActiveProblem(problem);
-                                // --- [NEW] TỰ ĐỘNG FILL CODE CŨ NẾU CÓ ---
                                 if (problem.user_code) {
                                     setCode(problem.user_code); 
                                 } else {
-                                    setCode(""); // Reset nếu chưa làm
+                                    setCode(""); 
                                 }
-                                setRunResult(null); // Reset console cũ
-                                setSubmitResult(null); // Reset thông báo cũ
+                                setRunResult(null); 
+                                setSubmitResult(null); 
                             }} 
                             className={`group border p-5 rounded-xl flex items-center justify-between cursor-pointer transition-all duration-200 
                             ${problem.status === 'Accepted' ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-md'}`}
                         >
                             <div className="flex items-center gap-6">
-                                {/* --- [NEW] Hiển thị Icon Check nếu đã Solved --- */}
                                 <span className={`w-10 h-10 rounded-lg font-black flex items-center justify-center text-lg transition
                                     ${problem.status === 'Accepted' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-blue-600 group-hover:text-white'}`}>
                                     {problem.status === 'Accepted' ? <CheckCircle size={20}/> : (problem.index || String.fromCharCode(65 + idx))}
@@ -463,7 +442,6 @@ const ContestDetail = ({ contest, onBack }) => {
                                     </h3>
                                     <div className="flex gap-2 mt-1">
                                         <span className={`text-xs px-2 py-0.5 rounded font-medium border ${problem.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-100' : problem.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-100' : 'bg-red-50 text-red-700 border-red-100'}`}>{problem.difficulty}</span>
-                                        {/* Badge trạng thái */}
                                         {problem.status && (
                                             <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ml-2 border
                                                 ${problem.status === 'Accepted' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-100'}`}>
@@ -502,9 +480,7 @@ const ContestDetail = ({ contest, onBack }) => {
   }
 };
 
-// -----------------------------
-// MAIN PAGE: DANH SÁCH CUỘC THI
-// -----------------------------
+//DANH SÁCH CUỘC THI
 export default function ContestPage() {
   const [contests, setContests] = useState([]);
   const [selectedContest, setSelectedContest] = useState(null);

@@ -44,19 +44,12 @@ const Register = () => {
       if (res.data.success) {
         setMessage("Đăng ký thành công! Đang chuyển hướng...");
         
-        // --- SỬA LỖI QUAN TRỌNG TẠI ĐÂY ---
-        // Phải lưu là 'accessToken' để khớp với Profile và LoginSuccess
-        // Backend trả về accessToken, và ta lưu key là "accessToken"
-localStorage.setItem("accessToken", res.data.accessToken);
+        localStorage.setItem("accessToken", res.data.accessToken);
         localStorage.setItem("user", JSON.stringify(res.data.user));
-
-        // Dispatch sự kiện để Navbar cập nhật ngay lập tức
         window.dispatchEvent(new Event("storage"));
 
         setTimeout(() => {
           navigate("/"); 
-          // Không cần reload trang nếu Navbar bắt được sự kiện storage hoặc dùng Context
-          // Nhưng reload 1 lần để chắc chắn state sạch sẽ cũng được
            window.location.reload(); 
         }, 1000);
       } else {
@@ -71,7 +64,6 @@ localStorage.setItem("accessToken", res.data.accessToken);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-start justify-center p-4 pt-32 pb-12 relative">
-      {/* Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
@@ -93,7 +85,6 @@ localStorage.setItem("accessToken", res.data.accessToken);
       >
         <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20">
           <div className="grid md:grid-cols-2 gap-0">
-            {/* Left Side */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -116,7 +107,6 @@ localStorage.setItem("accessToken", res.data.accessToken);
               </motion.div>
             </motion.div>
 
-            {/* Right Side - Form */}
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}

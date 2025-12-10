@@ -54,7 +54,6 @@ const LinearSearch = ({ isPlaying, data, onFinish }) => {
       .domain([0, maxValue])
       .range([height - 40, 20]);
 
-    // Vẽ cột
     svg.selectAll('rect')
       .data(array)
       .join('rect')
@@ -69,7 +68,6 @@ const LinearSearch = ({ isPlaying, data, onFinish }) => {
       })
       .attr('rx', 4);
 
-    // Vẽ số
     svg.selectAll('text')
       .data(array)
       .join('text')
@@ -80,7 +78,6 @@ const LinearSearch = ({ isPlaying, data, onFinish }) => {
       .attr('font-size', '14px')
       .text(d => d);
       
-    // Vẽ chú thích Target
     svg.append("text")
        .attr("x", 20)
        .attr("y", 30)

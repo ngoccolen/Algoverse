@@ -1,4 +1,3 @@
-// src/pages/LabDetail.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from 'react-markdown'; 
@@ -8,8 +7,6 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css'; 
 import ReactQuill from "react-quill-new";
-
-// --- IMPORT COMPONENTS ---
 import AlgorithmVisualizer from "../components/visualization"; 
 import QuizSection from "../components/lab/QuizSection";
 import CodeChallenge from "../components/lab/CodeChallenge";
@@ -18,29 +15,20 @@ import { getAlgoResource } from "../data/algorithmData";
 export default function LabDetail() {
   const { algKey } = useParams();
   const navigate = useNavigate();
-  
-  // Lấy tài nguyên tĩnh (Starter Code, Sample Code...)
   const resources = getAlgoResource(algKey); 
-  
-  // --- STATE DỮ LIỆU ---
   const [algorithm, setAlgorithm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLocked, setIsLocked] = useState(false);
-  
-  // --- STATE UI ---
   const [activeTab, setActiveTab] = useState("Lý thuyết");
   const [sampleLang, setSampleLang] = useState('cpp');
 
-  // --- STATE CHỌN NGÔN NGỮ CHẤM BÀI ---
   const [execLangId, setExecLangId] = useState(54); 
 
-  // --- STATE MÔ PHỎNG ---
   const [customInput, setCustomInput] = useState("64, 34, 25, 12, 22, 11, 90");
   const [simulationData, setSimulationData] = useState([64, 34, 25, 12, 22, 11, 90]);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // --- STATE BÀI TẬP ---
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizStatus, setQuizStatus] = useState(null);
   const [quizScore, setQuizScore] = useState(null);
@@ -50,7 +38,7 @@ export default function LabDetail() {
   const [codeStatus, setCodeStatus] = useState(null);
   const [codeFeedback, setCodeFeedback] = useState(null);
 
-  // 1. Fetch dữ liệu bài học
+  // Lấy dữ liệu bài học
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -65,7 +53,7 @@ export default function LabDetail() {
             if (data.data.isLocked) { setIsLocked(true); return; }
             setAlgorithm(data.data);
             
-            // Set code mặc định (C++)
+            // Set code mặc định
             setUserCode(resources.starterCode['cpp']); 
             
             if (data.data.user_details) {
@@ -86,7 +74,6 @@ export default function LabDetail() {
     fetchData();
   }, [algKey]); 
 
-  // Reset state mô phỏng khi đổi bài
   useEffect(() => {
     setIsPlaying(false);
     const defaultData = [64, 34, 25, 12, 22, 11, 90];
@@ -94,7 +81,6 @@ export default function LabDetail() {
     setCustomInput(defaultData.join(", "));
   }, [algKey]);
 
-  // --- HANDLERS ---
   
   const handleLoadSimulationData = () => {
     const arr = customInput.split(',')
@@ -184,7 +170,6 @@ export default function LabDetail() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white pt-20 pb-10">
-      {/* HEADER */}
       <div className="sticky top-[64px] z-30 bg-slate-900/80 backdrop-blur border-b border-slate-800 mb-8">
          <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div className="flex items-center gap-4">
@@ -200,7 +185,7 @@ export default function LabDetail() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
-        {/* TAB 1: LÝ THUYẾT (Giữ nguyên fix cũ) */}
+        {/* LÝ THUYẾT*/}
         {activeTab === "Lý thuyết" && (
            <div className={`
                prose prose-invert max-w-none 
@@ -219,7 +204,7 @@ export default function LabDetail() {
            </div>
         )}
 
-        {/* TAB 2: MÔ PHỎNG */}
+        {/*MÔ PHỎNG */}
         {activeTab === "Mô phỏng" && (
            <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
               <div className="flex-1 bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col">
@@ -252,7 +237,7 @@ export default function LabDetail() {
            </div>
         )}
 
-        {/* TAB 3: BÀI TẬP - ĐÃ SỬA LỖI HIỂN THỊ CODE TẠI ĐÂY */}
+        {/*BÀI TẬP*/}
         {activeTab === "Bài tập" && (
            <div className={`
                 space-y-8

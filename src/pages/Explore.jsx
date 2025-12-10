@@ -19,8 +19,7 @@ import {
   Activity
 } from 'lucide-react';
 
-// --- HÀM TIỆN ÍCH: Xử lý tiếng Việt ---
-// Chuyển đổi chuỗi tiếng Việt có dấu thành không dấu để tìm kiếm chính xác
+// Hàm Chuyển đổi chuỗi tiếng Việt có dấu thành không dấu để tìm kiếm 
 const removeVietnameseTones = (str) => {
   if (!str) return "";
   str = str.toLowerCase();
@@ -31,12 +30,11 @@ const removeVietnameseTones = (str) => {
   str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
   str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
   str = str.replace(/đ/g, "d");
-  // Loại bỏ các dấu thanh/ký tự đặc biệt còn sót lại
   str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
   return str;
 };
 
-// --- Dữ liệu Chủ đề (Categories) ---
+//Dữ liệu Chủ đề 
 const TOPICS = [
   {
     id: "sorting",
@@ -130,7 +128,6 @@ const TOPICS = [
   }
 ];
 
-// --- Animations ---
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -148,8 +145,7 @@ export default function Explore() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- LOGIC TÌM KIẾM ---
-  // Sử dụng useMemo để tối ưu, lọc dựa trên chuỗi đã được loại bỏ dấu
+  // TÌM KIẾM 
   const filteredTopics = useMemo(() => {
     const normalizedSearch = removeVietnameseTones(searchTerm.trim());
 
@@ -168,9 +164,7 @@ export default function Explore() {
     <div className="min-h-screen bg-[#0F172A] text-white font-sans flex flex-col">
       <Navbar />
 
-      {/* --- HERO SECTION --- */}
       <div className="relative pt-32 pb-16 px-6 border-b border-slate-800 bg-[#0F172A] overflow-hidden">
-        {/* Background Effects */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -205,7 +199,6 @@ export default function Explore() {
             Chọn một chủ đề để bắt đầu hành trình chinh phục đỉnh cao lập trình.
           </motion.p>
 
-          {/* Search Bar */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -229,7 +222,6 @@ export default function Explore() {
         </div>
       </div>
 
-      {/* --- GRID TOPICS SECTION --- */}
       <main className="flex-grow py-16 px-6 bg-slate-950/50">
         <div className="container mx-auto max-w-7xl">
           
@@ -243,7 +235,6 @@ export default function Explore() {
             </span>
           </div>
 
-          {/* QUAN TRỌNG: Thêm key để reset animation khi search thay đổi */}
           <motion.div 
             key={searchTerm + filteredTopics.length}
             variants={containerVariants}
@@ -263,10 +254,8 @@ export default function Explore() {
                     onClick={() => navigate(topic.path)}
                     className="group relative bg-slate-900 rounded-2xl p-1 cursor-pointer"
                   >
-                    {/* Gradient Border Effect */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${topic.color} opacity-0 group-hover:opacity-100 rounded-2xl blur-sm transition-opacity duration-300`}></div>
                     
-                    {/* Card Content */}
                     <div className="relative h-full bg-slate-900 rounded-xl p-6 border border-slate-800 group-hover:border-transparent transition-colors flex flex-col">
                       
                       <div className="flex justify-between items-start mb-6">
@@ -306,7 +295,6 @@ export default function Explore() {
                 );
               })
             ) : (
-              // Empty State
               <div className="col-span-full py-20 text-center text-slate-500">
                 <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
                 <p className="text-lg">Không tìm thấy chủ đề nào phù hợp với "{searchTerm}".</p>

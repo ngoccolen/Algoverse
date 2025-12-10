@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 
 import { Terminal, PlayCircle, Loader2, CheckCircle, XCircle, AlertTriangle, ChevronDown } from "lucide-react";
 
-// Cấu hình danh sách ngôn ngữ và Template Code tương ứng
+// Cấu hình danh sách ngôn ngữ 
 const LANGUAGES = [
     { 
         id: 54, 

@@ -1,7 +1,6 @@
 import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-// Import các component
 import Navbar from "./components/Navbar/Navbar";
 import AlgorithmExplorer from "./pages/Explore";
 import AuthPage from "./pages/Login";
@@ -18,17 +17,11 @@ import ResetPasswordOTP from "./pages/ResetPasswordOTP";
 import LearningPath from './pages/LearningPath';
 import LabDetail from './pages/LabDetail'; 
 import AdminDashboard from "./pages/AdminDashboard";
-
-// Import Context
 import { AuthContext } from "./context/AuthContext";
 
-// --- [SỬA LỖI QUAN TRỌNG Ở ĐÂY] ---
 const PrivateRoute = ({ children }) => {
-  // 1. Lấy thêm biến 'loading' từ AuthContext
   const { user, loading } = useContext(AuthContext);
 
-  // 2. Nếu đang tải thông tin user từ LocalStorage -> Hiện màn hình chờ (Spinner)
-  // Việc này ngăn chặn React chuyển hướng sai khi chưa kịp đọc Token
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -36,8 +29,6 @@ const PrivateRoute = ({ children }) => {
       </div>
     );
   }
-
-  // 3. Tải xong rồi mới kiểm tra: Có user thì cho vào, không có thì về Login
   return user ? children : <Navigate to="/login" replace />;
 };
 
@@ -59,8 +50,6 @@ export default function App() {
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/path/:categoryId" element={<LearningPath />} />
         <Route path="/lab/:algKey" element={<LabDetail />} />
-
-        {/* Practice Detail - Yêu cầu đăng nhập */}
         <Route
           path="/practice/:id"
           element={
@@ -79,7 +68,6 @@ export default function App() {
           }
         />
 
-        {/* Trang Admin - Yêu cầu đăng nhập */}
         <Route 
           path="/admin" 
           element={
@@ -88,8 +76,6 @@ export default function App() {
             </PrivateRoute>
           } 
         />
-
-        {/* Route bắt tất cả các link sai (LUÔN ĐỂ CUỐI CÙNG) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

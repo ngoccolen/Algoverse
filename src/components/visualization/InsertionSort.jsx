@@ -28,7 +28,7 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
     setLogs([{ message: "Sẵn sàng. Nhấn 'Chạy' để bắt đầu...", type: 'system' }]);
   }, [data]);
 
-  // Vẽ biểu đồ D3 
+  // Vẽ biểu đồ
   useEffect(() => {
     if (!svgRef.current) return;
     
@@ -124,7 +124,6 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full gap-4">
-      {/* 1. Đồ thị SVG */}
       <svg 
         ref={svgRef} 
         width="100%" 
@@ -133,7 +132,6 @@ const InsertionSort = ({ isPlaying, data, onFinish }) => {
         className="bg-slate-900/50 rounded-lg shadow-inner border border-slate-700 w-full max-w-[500px]"
       ></svg>
       
-      {/* 2. Log Trace Panel */}
       <div className="w-full max-w-[500px] h-40 bg-[#1e1e1e] rounded-lg border border-slate-700 flex flex-col overflow-hidden shadow-lg">
         <div className="bg-[#252526] px-3 py-1 border-b border-black/40 flex justify-between items-center">
              <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
