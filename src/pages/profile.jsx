@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -7,7 +8,7 @@ import {
 import axios from 'axios';
 import Footer from '../components/Footer/Footer'; 
 
-const API_URL = "http://localhost:5000";
+const API_URL = `${API_BASE_URL}`;
 
 export default function Profile() {
   const [user, setUser] = useState(null);

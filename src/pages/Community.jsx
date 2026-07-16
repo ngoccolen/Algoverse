@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Footer from '../components/Footer/Footer'; 
+import API_BASE_URL from '../config';
 
 const formatTime = (dateString) => {
   const date = new Date(dateString);
@@ -25,7 +26,7 @@ const topicColors = {
   'General': 'text-gray-600 bg-gray-50'
 };
 
-const API_URL = "http://localhost:5000";
+const API_URL = API_BASE_URL;
 
 // TẠO BÀI VIẾT
 const CreatePostModal = ({ isOpen, onClose, onSubmit }) => {

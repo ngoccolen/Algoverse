@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -33,7 +34,7 @@ export default function LearningPath() {
         const token = localStorage.getItem("accessToken");
         const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
-        const res = await fetch("http://localhost:5000/api/algorithms", { headers });
+        const res = await fetch(`${API_BASE_URL}/api/algorithms`, { headers });
         const data = await res.json();
 
         if (data.success) {

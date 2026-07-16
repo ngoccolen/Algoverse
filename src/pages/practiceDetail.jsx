@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MonacoEditor from "@monaco-editor/react";
@@ -109,7 +110,7 @@ export default function PracticeDetail() {
           navigate("/login");
           return;
       }
-      const res = await axios.get(`http://localhost:5000/api/practice/problems/${id}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/practice/problems/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -133,7 +134,7 @@ export default function PracticeDetail() {
   const fetchHistory = async () => {
     try {
       if (!token) return;
-      const res = await axios.get(`http://localhost:5000/api/practice/history/${id}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/practice/history/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHistory(res.data);
@@ -147,7 +148,7 @@ export default function PracticeDetail() {
     setActiveTab("editor"); 
     
     try {
-      const res = await axios.post(`http://localhost:5000/api/practice/submit/${id}`, {
+      const res = await axios.post(`${API_BASE_URL}/api/practice/submit/${id}`, {
         language, 
         source: code, 
         runOnly

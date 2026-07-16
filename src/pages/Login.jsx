@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,7 +39,7 @@ const Login = () => {
     setMessage(null);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", { username, password });
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
 
       if (response.data.success) {
         const token = response.data.accessToken; 
@@ -65,7 +66,7 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   // QUÊN MẬT KHẨU
@@ -74,7 +75,7 @@ const Login = () => {
     setForgotLoading(true);
     setForgotMsg("");
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/forgot-password", { email: forgotEmail });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email: forgotEmail });
       setForgotMsg(res.data.message);
       if (res.status === 200) {
         setForgotStep(2); 
@@ -89,7 +90,7 @@ const Login = () => {
     if (!otp || !newPassword) { setForgotMsg("Vui lòng nhập đủ thông tin"); return; }
     setForgotLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/reset-password", { 
+      const res = await axios.post(`${API_BASE_URL}/api/auth/reset-password`, { 
         email: forgotEmail, otp, newPassword 
       });
       setForgotMsg(res.data.message);

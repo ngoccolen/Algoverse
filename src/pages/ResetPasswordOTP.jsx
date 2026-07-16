@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -14,7 +15,7 @@ export default function ResetPasswordOTP() {
   if (!email) return <p>Lỗi: Không có email!</p>;
 
   const handleReset = async () => {
-    const res = await fetch("http://localhost:5000/api/auth/reset-password", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, otp, newPassword }),

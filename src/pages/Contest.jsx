@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 // pages/Contest.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -122,7 +123,7 @@ const ContestDetail = ({ contest, onBack }) => {
     
     const token = localStorage.getItem("accessToken");
     if(token) {
-        fetch(`http://localhost:5000/api/contests/${contest.id}/check-registration`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${API_BASE_URL}/api/contests/${contest.id}/check-registration`, { headers: { 'Authorization': `Bearer ${token}` } })
         .then(res => res.json())
         .then(data => { 
             setIsRegistered(data.registered); 
@@ -139,7 +140,7 @@ const ContestDetail = ({ contest, onBack }) => {
         setIsStarted(isNowStarted);
 
         if (isRegistered && isNowStarted && problemsList.length === 0 && loading) {
-             fetch(`http://localhost:5000/api/contests/${contest.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+             fetch(`${API_BASE_URL}/api/contests/${contest.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json())
             .then(data => { if(data.success) setProblemsList(data.problems || []); })
             .finally(() => setLoading(false));
@@ -155,7 +156,7 @@ const ContestDetail = ({ contest, onBack }) => {
 
   useEffect(() => {
       if(activeTab === 'leaderboard') {
-          fetch(`http://localhost:5000/api/contests/${contest.id}/leaderboard`)
+          fetch(`${API_BASE_URL}/api/contests/${contest.id}/leaderboard`)
             .then(res => res.json())
             .then(data => setLeaderboard(data.leaderboard || []));
       }
@@ -167,7 +168,7 @@ const ContestDetail = ({ contest, onBack }) => {
       
       setIsRegistering(true); 
       try {
-        const res = await fetch('http://localhost:5000/api/contests/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ contestId: contest.id }) });
+        const res = await fetch(`${API_BASE_URL}/api/contests/register`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ contestId: contest.id }) });
         const data = await res.json();
         
         if(data.success) {
@@ -188,12 +189,12 @@ const ContestDetail = ({ contest, onBack }) => {
   const handleRunCode = async () => { 
     if (!code.trim()) return alert("Vui lòng nhập code!"); setIsRunning(true); setRunResult(null); setSubmitResult(null);
     const token = localStorage.getItem("accessToken");
-    try { const res = await fetch(`http://localhost:5000/api/contests/run`, { method: 'POST', headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }, body: JSON.stringify({ problemId: activeProblem.id, language: language, source: code }) }); const data = await res.json(); setRunResult(data); } catch (err) { alert("Lỗi!"); } finally { setIsRunning(false); }
+    try { const res = await fetch(`${API_BASE_URL}/api/contests/run`, { method: 'POST', headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }, body: JSON.stringify({ problemId: activeProblem.id, language: language, source: code }) }); const data = await res.json(); setRunResult(data); } catch (err) { alert("Lỗi!"); } finally { setIsRunning(false); }
   };
   const handleSubmit = async () => { 
     if (!code.trim()) return alert("Vui lòng nhập code!"); setSubmitting(true); setSubmitResult(null); setRunResult(null);
     const token = localStorage.getItem("accessToken");
-    try { const res = await fetch('http://localhost:5000/api/submissions/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ problemId: activeProblem.id, language, source: code, contestId: contest.id }) }); const data = await res.json(); setSubmitResult(data); } catch (error) { alert("Lỗi!"); } finally { setSubmitting(false); }
+    try { const res = await fetch(`${API_BASE_URL}/api/submissions/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ problemId: activeProblem.id, language, source: code, contestId: contest.id }) }); const data = await res.json(); setSubmitResult(data); } catch (error) { alert("Lỗi!"); } finally { setSubmitting(false); }
   };
 
   if (checkingReg || !isRegistered) {
@@ -490,7 +491,7 @@ export default function ContestPage() {
   useEffect(() => { 
       const token = localStorage.getItem("accessToken");
       
-      fetch('http://localhost:5000/api/contests', {
+      fetch(`${API_BASE_URL}/api/contests`, {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.json())

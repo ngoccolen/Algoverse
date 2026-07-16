@@ -22,7 +22,10 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000'
+  ].filter(Boolean),
   credentials: true,
 }));
 
@@ -54,6 +57,9 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/problems', problemRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes); 
+
+const chatRoutes = require('./routes/chatRoutes');
+app.use('/api/chat', chatRoutes);
 app.post('/api/submissions/submit', submissionController.submitCode);
 
 const PORT = process.env.PORT || 5000;

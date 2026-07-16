@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import ChatBot from "./components/ChatBot/ChatBot";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar/Navbar";
@@ -78,6 +79,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ChatBot />
     </Router>
   );
 }

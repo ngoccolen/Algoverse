@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Search, Loader2 } from 'lucide-react';
@@ -20,7 +21,7 @@ export default function PracticePage() {
 
     async function fetchData() {
         try {
-            const base = "http://localhost:5000"; 
+            const base = `${API_BASE_URL}`; 
             const token = localStorage.getItem("accessToken");
 
             if (!token) {

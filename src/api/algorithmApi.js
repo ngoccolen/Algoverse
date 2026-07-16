@@ -1,6 +1,7 @@
 import axios from "axios";
+import API_BASE_URL from "../config";
 
-const API = "http://localhost:5000/api/algorithms";
+const API = `${API_BASE_URL}/api/algorithms`;
 
 export const getCategories = () => axios.get(`${API}/categories`);
 

@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReactMarkdown from 'react-markdown'; 
@@ -44,7 +45,7 @@ export default function LabDetail() {
       setLoading(true);
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await fetch(`http://localhost:5000/api/algorithms/${algKey}`, {
+        const res = await fetch(`${API_BASE_URL}/api/algorithms/${algKey}`, {
             headers: token ? { "Authorization": `Bearer ${token}` } : {}
         });
         const data = await res.json();
@@ -105,7 +106,7 @@ export default function LabDetail() {
         const token = localStorage.getItem("accessToken");
         if (!token) { alert("Bạn cần đăng nhập!"); navigate('/login'); return; }
 
-        const res = await fetch(`http://localhost:5000/api/algorithms/${algKey}/submit-answer`, {
+        const res = await fetch(`${API_BASE_URL}/api/algorithms/${algKey}/submit-answer`, {
             method: 'POST',
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
             body: JSON.stringify({ answers: answersArray })
@@ -138,7 +139,7 @@ export default function LabDetail() {
         const token = localStorage.getItem("accessToken");
         if (!token) { alert("Bạn cần đăng nhập!"); navigate('/login'); return; }
         
-        const res = await fetch(`http://localhost:5000/api/algorithms/${algKey}/submit-code`, {
+        const res = await fetch(`${API_BASE_URL}/api/algorithms/${algKey}/submit-code`, {
             method: 'POST',
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
             body: JSON.stringify({ code: userCode, language_id: execLangId })
