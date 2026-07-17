@@ -4,13 +4,15 @@ import { Activity, Construction } from 'lucide-react';
 import BubbleSort from './BubbleSort';
 import SelectionSort from './SelectionSort';
 import LinearSearch from './LinearSearch'; 
+import MergeSort from './MergeSort';
+import QuickSort from './QuickSort';
 
 const ALGORITHM_COMPONENTS = {
   'bubble-sort': BubbleSort,
   'selection-sort': SelectionSort,
   'linear-search': LinearSearch, 
-    'quick-sort': () => <Placeholder name="Quick Sort" />,
-  'merge-sort': () => <Placeholder name="Merge Sort" />,
+  'quick-sort': QuickSort,
+  'merge-sort': MergeSort,
   'insertion-sort': () => <Placeholder name="Insertion Sort" />,
 };
 
