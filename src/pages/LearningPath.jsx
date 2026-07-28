@@ -1,26 +1,29 @@
 import API_BASE_URL from '../config';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle,
   Lock,
   PlayCircle,
   ArrowLeft,
+  ArrowRight,
   Trophy,
   Star,
-  Sparkles
+  Sparkles,
+  Zap,
+  Target
 } from 'lucide-react';
 import Footer from '../components/Footer/Footer';
 import './learningPath.css';
 
 // ── Floating particles background ──
-const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
   id: i,
   left: `${Math.random() * 100}%`,
-  size: 2 + Math.random() * 3,
-  duration: 10 + Math.random() * 12,
-  delay: Math.random() * 8,
+  size: 2 + Math.random() * 4,
+  duration: 12 + Math.random() * 16,
+  delay: Math.random() * 10,
 }));
 
 function FloatingParticles() {
@@ -43,42 +46,58 @@ function FloatingParticles() {
   );
 }
 
-// ── Progress ring SVG ──
-function ProgressRing({ progress, completed, total }) {
-  const radius = 20;
+// ── Star field background ──
+function StarField() {
+  return <div className="roadmap-starfield" aria-hidden="true" />;
+}
+
+// ── Progress ring — glowing orb ──
+function ProgressOrb({ progress, completed, total }) {
+  const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="roadmap-progress-card">
-      <div className="roadmap-progress-ring">
-        <svg viewBox="0 0 48 48">
-          <defs>
-            <linearGradient id="roadmapProgressGrad" x1="0" x2="1">
-              <stop stopColor="#22d3ee" />
-              <stop offset="0.5" stopColor="#8b5cf6" />
-              <stop offset="1" stopColor="#f472b6" />
-            </linearGradient>
-          </defs>
-          <circle cx="24" cy="24" r={radius} className="roadmap-progress-ring__bg" />
-          <circle
-            cx="24" cy="24" r={radius}
-            className="roadmap-progress-ring__fill"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-          />
-        </svg>
-        <span className="roadmap-progress-ring__text">{progress}%</span>
+    <div className="roadmap-progress-orb">
+      <div className="roadmap-progress-ring-wrap">
+        <div className="roadmap-progress-ring">
+          <svg viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="roadmapProgressGrad" x1="0" x2="1">
+                <stop stopColor="#6366f1" />
+                <stop offset="0.5" stopColor="#a855f7" />
+                <stop offset="1" stopColor="#ec4899" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r={radius} className="roadmap-progress-ring__bg" />
+            <circle
+              cx="50" cy="50" r={radius}
+              className="roadmap-progress-ring__fill"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+            />
+          </svg>
+          <span className="roadmap-progress-ring__text">
+            <span className="roadmap-progress-pct">{progress}%</span>
+            <span className="roadmap-progress-label">Hoàn thành</span>
+          </span>
+        </div>
       </div>
-      <div className="roadmap-progress-meta">
-        <strong>{completed}/{total} bài</strong>
-        <span>Hoàn thành</span>
+      <div className="roadmap-progress-stats">
+        <span>
+          <span className="stat-dot stat-dot--done" />
+          {completed} đã xong
+        </span>
+        <span>
+          <span className="stat-dot stat-dot--remaining" />
+          {total - completed} còn lại
+        </span>
       </div>
     </div>
   );
 }
 
-// ── Connector dots between nodes ──
+// ── Connector dots between timeline items ──
 function ConnectorDots({ prevCompleted, currentUnlocked }) {
   const dotState = prevCompleted
     ? 'roadmap-connector__dot--done'
@@ -88,33 +107,41 @@ function ConnectorDots({ prevCompleted, currentUnlocked }) {
 
   return (
     <div className="roadmap-connector">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2, 3].map((i) => (
         <motion.div
           key={i}
           className={`roadmap-connector__dot ${dotState}`}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.05 * i, duration: 0.3 }}
+          transition={{ delay: 0.06 * i, duration: 0.35 }}
         />
       ))}
     </div>
   );
 }
 
-// ── Single roadmap node ──
-function RoadmapNode({ algo, index, onClick }) {
+// ── Single timeline item (hexagonal milestone + glassmorphism card) ──
+function TimelineItem({ algo, index, globalIndex, onClick }) {
   const isCompleted = algo.progress >= 100;
   const isCurrent = !algo.isLocked && !isCompleted && !algo._isPreviouslyOpen;
   const isOpen = !algo.isLocked && !isCompleted && !isCurrent;
   const isLocked = algo.isLocked;
 
-  const stateClass = isCompleted
-    ? 'roadmap-node--completed'
+  const milestoneState = isCompleted
+    ? 'roadmap-milestone--completed'
     : isCurrent
-      ? 'roadmap-node--current'
+      ? 'roadmap-milestone--current'
       : isOpen
-        ? 'roadmap-node--open'
-        : 'roadmap-node--locked';
+        ? 'roadmap-milestone--open'
+        : 'roadmap-milestone--locked';
+
+  const cardState = isCompleted
+    ? 'roadmap-card--completed'
+    : isCurrent
+      ? 'roadmap-card--current'
+      : isLocked
+        ? 'roadmap-card--locked'
+        : '';
 
   const side = index % 2 === 0 ? 'left' : 'right';
 
@@ -123,72 +150,97 @@ function RoadmapNode({ algo, index, onClick }) {
       : algo.difficulty === 'Medium' ? 'medium'
         : 'hard';
 
+  const difficultyLabel =
+    algo.difficulty === 'Easy' ? 'Cơ bản'
+      : algo.difficulty === 'Medium' ? 'Trung bình'
+        : 'Nâng cao';
+
   return (
     <motion.div
-      className={`roadmap-node-row roadmap-node-row--${side}`}
-      initial={{ opacity: 0, x: side === 'left' ? -40 : 40 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.08 * index, duration: 0.5, ease: 'easeOut' }}
-      onClick={() => onClick(algo.alg_key, algo.isLocked)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(algo.alg_key, algo.isLocked); }}
-      aria-label={`${algo.name} - ${algo.difficulty}`}
+      className={`roadmap-timeline-item roadmap-timeline-item--${side}`}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        delay: 0.1 * globalIndex,
+        duration: 0.6,
+        ease: [0.34, 1.56, 0.64, 1]
+      }}
     >
-      {/* Circle node */}
+      {/* Hexagonal milestone */}
       <motion.div
-        className={`roadmap-node ${stateClass}`}
-        whileHover={!isLocked ? { scale: 1.12 } : {}}
-        whileTap={!isLocked ? { scale: 0.95 } : {}}
-        animate={
-          isCurrent
-            ? { y: [0, -6, 0] }
-            : {}
-        }
-        transition={
-          isCurrent
-            ? { duration: 2.2, repeat: Infinity, ease: 'easeInOut' }
-            : { duration: 0.2 }
-        }
+        className={`roadmap-milestone ${milestoneState}`}
+        whileHover={!isLocked ? { scale: 1.15 } : {}}
+        whileTap={!isLocked ? { scale: 0.9 } : {}}
+        onClick={() => onClick(algo.alg_key, algo.isLocked)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') onClick(algo.alg_key, algo.isLocked);
+        }}
+        aria-label={`${algo.name} - ${algo.difficulty}`}
       >
-        <div className="roadmap-node__ring" />
-        <div className="roadmap-node__inner">
-          <span className="roadmap-node__icon">
+        <div className="roadmap-milestone__hex" />
+        <div className="roadmap-milestone__inner">
+          <span className="roadmap-milestone__icon">
             {isCompleted ? (
-              <CheckCircle size={26} />
+              <CheckCircle size={22} />
             ) : isLocked ? (
-              <Lock size={22} />
+              <Lock size={18} />
+            ) : isCurrent ? (
+              <Zap size={22} />
             ) : (
-              <PlayCircle size={26} />
+              <PlayCircle size={22} />
             )}
           </span>
         </div>
+        <span className="roadmap-milestone__number">{globalIndex + 1}</span>
       </motion.div>
 
-      {/* Info card */}
-      <div className="roadmap-info">
-        <h3 className="roadmap-info__name">{algo.name}</h3>
-        <div className="roadmap-info__meta">
-          <span className={`roadmap-info__difficulty roadmap-info__difficulty--${difficultyClass}`}>
-            {algo.difficulty}
+      {/* Glassmorphism info card */}
+      <div
+        className={`roadmap-card ${cardState}`}
+        onClick={() => onClick(algo.alg_key, algo.isLocked)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') onClick(algo.alg_key, algo.isLocked);
+        }}
+      >
+        <div className="roadmap-card__header">
+          <h3 className="roadmap-card__name">{algo.name}</h3>
+          {!isLocked && (
+            <ArrowRight size={16} className="roadmap-card__arrow" />
+          )}
+        </div>
+
+        <div className="roadmap-card__meta">
+          <span className={`roadmap-card__difficulty roadmap-card__difficulty--${difficultyClass}`}>
+            {difficultyLabel}
           </span>
           {algo.complexity && (
-            <span className="roadmap-info__complexity">
-              <Star size={11} /> {algo.complexity}
+            <span className="roadmap-card__complexity">
+              <Star size={10} /> {algo.complexity}
             </span>
           )}
         </div>
 
         {!isLocked && (
-          <>
-            <div className="roadmap-info__progress-bar">
+          <div className="roadmap-card__progress">
+            <div className="roadmap-card__progress-bar">
               <div
-                className={`roadmap-info__progress-fill ${isCompleted ? 'roadmap-info__progress-fill--done' : 'roadmap-info__progress-fill--active'}`}
+                className={`roadmap-card__progress-fill ${isCompleted ? 'roadmap-card__progress-fill--done' : 'roadmap-card__progress-fill--active'}`}
                 style={{ width: `${algo.progress}%` }}
               />
             </div>
-            <span className="roadmap-info__progress-text">{algo.progress}%</span>
-          </>
+            <div className="roadmap-card__progress-row">
+              <span className="roadmap-card__progress-text">
+                {isCompleted ? 'Hoàn thành' : isCurrent ? 'Đang học' : 'Đã mở khóa'}
+              </span>
+              <span className={`roadmap-card__progress-pct ${isCompleted ? 'roadmap-card__progress-pct--done' : ''}`}>
+                {algo.progress}%
+              </span>
+            </div>
+          </div>
         )}
       </div>
     </motion.div>
@@ -203,16 +255,16 @@ function LevelDivider({ title, difficulty }) {
         : 'roadmap-level-badge--hard';
 
   const icon =
-    difficulty === 'Easy' ? <Sparkles size={14} />
-      : difficulty === 'Medium' ? <Star size={14} />
-        : <Trophy size={14} />;
+    difficulty === 'Easy' ? <Sparkles size={13} />
+      : difficulty === 'Medium' ? <Star size={13} />
+        : <Trophy size={13} />;
 
   return (
     <motion.div
       className="roadmap-level-divider"
-      initial={{ opacity: 0, scaleX: 0.5 }}
+      initial={{ opacity: 0, scaleX: 0.3 }}
       animate={{ opacity: 1, scaleX: 1 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
     >
       <span className={`roadmap-level-badge ${badgeClass}`}>
         {icon} {title}
@@ -307,19 +359,19 @@ export default function LearningPath() {
           const pathData = [
             {
               id: "l1",
-              title: "Level 1: Nhập môn & Cơ bản",
+              title: "Nhập môn & Cơ bản",
               difficulty: "Easy",
               algorithms: processLevel(level1)
             },
             {
               id: "l2",
-              title: "Level 2: Trung cấp & Tối ưu",
+              title: "Trung cấp & Tối ưu",
               difficulty: "Medium",
               algorithms: processLevel(level2)
             },
             {
               id: "l3",
-              title: "Level 3: Nâng cao & Ứng dụng",
+              title: "Nâng cao & Ứng dụng",
               difficulty: "Hard",
               algorithms: processLevel(level3)
             }
@@ -378,17 +430,20 @@ export default function LearningPath() {
   // ── Loading state ──
   if (loading) return (
     <div className="roadmap-loading">
-      <span className="button-spinner" />
-      Đang tải lộ trình học...
+      <div className="roadmap-loading-spinner" />
+      <span>Đang tải lộ trình học...</span>
     </div>
   );
 
-  // Keep a running global index for zigzag positioning
+  // Keep a running global index for positioning & numbering
   let globalIndex = 0;
 
   return (
     <div className="roadmap-page">
-      {/* Ambient background glows */}
+      {/* Star field background */}
+      <StarField />
+
+      {/* Nebula ambient glows */}
       <div className="roadmap-ambient roadmap-ambient--one" />
       <div className="roadmap-ambient roadmap-ambient--two" />
       <div className="roadmap-ambient roadmap-ambient--three" />
@@ -398,20 +453,31 @@ export default function LearningPath() {
 
       {/* Header */}
       <header className="roadmap-header">
-        <button
+        <motion.button
           className="roadmap-back"
           onClick={() => navigate('/explore')}
+          whileHover={{ x: -3 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <ArrowLeft size={18} /> Quay lại Khám phá
-        </button>
+          <ArrowLeft size={16} /> Quay lại Khám phá
+        </motion.button>
 
-        <div className="roadmap-title-row">
-          <div>
+        {/* Hero section */}
+        <motion.div
+          className="roadmap-hero"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+        >
+          <div className="roadmap-hero-info">
+            <div className="roadmap-eyebrow">
+              <Target size={14} /> Lộ trình học tập
+            </div>
             <motion.h1
               className="roadmap-title"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ delay: 0.15, duration: 0.6 }}
             >
               {categoryTitle}
             </motion.h1>
@@ -419,45 +485,54 @@ export default function LearningPath() {
               className="roadmap-subtitle"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
             >
-              Hoàn thành từng bài học để mở khóa cấp độ tiếp theo trên con đường chinh phục.
+              Chinh phục từng cột mốc để mở khóa kiến thức mới. Mỗi bước đi là một bước tiến gần hơn đến mục tiêu.
             </motion.p>
           </div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            initial={{ opacity: 0, scale: 0.7, rotate: -10 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ delay: 0.4, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
           >
-            <ProgressRing
+            <ProgressOrb
               progress={overallProgress}
               completed={completedCount}
               total={allAlgos.length}
             />
           </motion.div>
-        </div>
+        </motion.div>
       </header>
 
-      {/* Main roadmap area */}
+      {/* Main timeline area */}
       <div className="roadmap-container">
+        {/* Animated vertical line */}
+        <div className="roadmap-timeline-line" />
+
         {processedLevels.length === 0 ? (
           <div className="roadmap-empty">
-            <Trophy size={48} style={{ color: '#67e8f9' }} />
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            >
+              <Trophy size={56} style={{ color: '#6366f1' }} />
+            </motion.div>
             <h2>Chưa có bài học nào</h2>
             <p>Chưa có bài học nào trong mục này. Hãy quay lại sau nhé!</p>
           </div>
         ) : (
-          processedLevels.map((level, lvlIdx) => {
-            const levelContent = (
-              <div key={level.id}>
+          <AnimatePresence>
+            {processedLevels.map((level, lvlIdx) => (
+              <div key={level.id} className="roadmap-level-section">
                 {/* Level divider */}
                 <LevelDivider
                   title={level.title}
                   difficulty={level.difficulty}
                 />
 
-                {/* Nodes */}
+                {/* Timeline items */}
                 {level.algorithms.map((algo, algoIdx) => {
                   const currentGlobalIndex = globalIndex;
                   globalIndex++;
@@ -472,7 +547,7 @@ export default function LearningPath() {
 
                   return (
                     <React.Fragment key={algo.id || algo.alg_key || currentGlobalIndex}>
-                      {/* Connector dots (skip before very first node) */}
+                      {/* Connector dots */}
                       {!isFirst && (
                         <ConnectorDots
                           prevCompleted={prevAlgo?.progress >= 100}
@@ -480,81 +555,56 @@ export default function LearningPath() {
                         />
                       )}
 
-                      {/* The node */}
-                      <RoadmapNode
+                      {/* Timeline item */}
+                      <TimelineItem
                         algo={algo}
-                        index={currentGlobalIndex}
+                        index={algoIdx}
+                        globalIndex={currentGlobalIndex}
                         onClick={handleNavigate}
                       />
                     </React.Fragment>
                   );
                 })}
               </div>
-            );
-
-            return levelContent;
-          })
+            ))}
+          </AnimatePresence>
         )}
 
         {/* End trophy */}
         {processedLevels.length > 0 && (
           <motion.div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              marginTop: '2.5rem',
-              gap: '0.5rem',
-            }}
-            initial={{ opacity: 0, y: 20 }}
+            className="roadmap-finish"
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
+            transition={{ delay: 0.6, duration: 0.7 }}
           >
             <ConnectorDots prevCompleted={overallProgress === 100} currentUnlocked={false} />
+
             <motion.div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                background: overallProgress === 100
-                  ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
-                  : 'linear-gradient(135deg, #1e293b, #0f172a)',
-                border: overallProgress === 100
-                  ? '3px solid #fbbf24'
-                  : '3px solid #334155',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: overallProgress === 100
-                  ? '0 0 30px rgba(251, 191, 36, 0.3)'
-                  : 'none',
-              }}
+              className="roadmap-finish__trophy-wrap"
               animate={
                 overallProgress === 100
-                  ? { rotate: [0, 10, -10, 0], scale: [1, 1.05, 1] }
+                  ? { rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }
                   : {}
               }
               transition={
                 overallProgress === 100
-                  ? { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+                  ? { duration: 3, repeat: Infinity, ease: 'easeInOut' }
                   : {}
               }
             >
+              <div className={`roadmap-finish__trophy-bg ${overallProgress === 100 ? 'roadmap-finish__trophy-bg--unlocked' : 'roadmap-finish__trophy-bg--locked'}`} />
               <Trophy
-                size={28}
+                size={32}
+                className="roadmap-finish__icon"
                 style={{
                   color: overallProgress === 100 ? '#fff' : '#475569',
                 }}
               />
             </motion.div>
-            <span style={{
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              color: overallProgress === 100 ? '#fbbf24' : '#475569',
-              textAlign: 'center',
-              marginTop: '0.2rem',
-            }}>
-              {overallProgress === 100 ? '🎉 Hoàn thành xuất sắc!' : 'Đích đến'}
+
+            <span className={`roadmap-finish__text ${overallProgress === 100 ? 'roadmap-finish__text--unlocked' : 'roadmap-finish__text--locked'}`}>
+              {overallProgress === 100 ? '🎉 Hoàn thành xuất sắc!' : 'Đích đến cuối cùng'}
             </span>
           </motion.div>
         )}
