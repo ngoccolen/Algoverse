@@ -1,19 +1,231 @@
 import API_BASE_URL from '../config';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  CheckCircle, 
-  Lock, 
-  PlayCircle, 
-  ArrowLeft, 
+import {
+  CheckCircle,
+  Lock,
+  PlayCircle,
+  ArrowLeft,
   Trophy,
-  Star
+  Star,
+  Sparkles
 } from 'lucide-react';
-import Footer from '../components/Footer/Footer'; 
+import Footer from '../components/Footer/Footer';
+import './learningPath.css';
 
+// ── Floating particles background ──
+const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  size: 2 + Math.random() * 3,
+  duration: 10 + Math.random() * 12,
+  delay: Math.random() * 8,
+}));
+
+function FloatingParticles() {
+  return (
+    <div className="roadmap-particles" aria-hidden="true">
+      {PARTICLES.map((p) => (
+        <div
+          key={p.id}
+          className="roadmap-particle"
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            animationDuration: `${p.duration}s`,
+            animationDelay: `${p.delay}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Progress ring SVG ──
+function ProgressRing({ progress, completed, total }) {
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="roadmap-progress-card">
+      <div className="roadmap-progress-ring">
+        <svg viewBox="0 0 48 48">
+          <defs>
+            <linearGradient id="roadmapProgressGrad" x1="0" x2="1">
+              <stop stopColor="#22d3ee" />
+              <stop offset="0.5" stopColor="#8b5cf6" />
+              <stop offset="1" stopColor="#f472b6" />
+            </linearGradient>
+          </defs>
+          <circle cx="24" cy="24" r={radius} className="roadmap-progress-ring__bg" />
+          <circle
+            cx="24" cy="24" r={radius}
+            className="roadmap-progress-ring__fill"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+          />
+        </svg>
+        <span className="roadmap-progress-ring__text">{progress}%</span>
+      </div>
+      <div className="roadmap-progress-meta">
+        <strong>{completed}/{total} bài</strong>
+        <span>Hoàn thành</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Connector dots between nodes ──
+function ConnectorDots({ prevCompleted, currentUnlocked }) {
+  const dotState = prevCompleted
+    ? 'roadmap-connector__dot--done'
+    : currentUnlocked
+      ? 'roadmap-connector__dot--active'
+      : '';
+
+  return (
+    <div className="roadmap-connector">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className={`roadmap-connector__dot ${dotState}`}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.05 * i, duration: 0.3 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Single roadmap node ──
+function RoadmapNode({ algo, index, onClick }) {
+  const isCompleted = algo.progress >= 100;
+  const isCurrent = !algo.isLocked && !isCompleted && !algo._isPreviouslyOpen;
+  const isOpen = !algo.isLocked && !isCompleted && !isCurrent;
+  const isLocked = algo.isLocked;
+
+  const stateClass = isCompleted
+    ? 'roadmap-node--completed'
+    : isCurrent
+      ? 'roadmap-node--current'
+      : isOpen
+        ? 'roadmap-node--open'
+        : 'roadmap-node--locked';
+
+  const side = index % 2 === 0 ? 'left' : 'right';
+
+  const difficultyClass =
+    algo.difficulty === 'Easy' ? 'easy'
+      : algo.difficulty === 'Medium' ? 'medium'
+        : 'hard';
+
+  return (
+    <motion.div
+      className={`roadmap-node-row roadmap-node-row--${side}`}
+      initial={{ opacity: 0, x: side === 'left' ? -40 : 40 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.08 * index, duration: 0.5, ease: 'easeOut' }}
+      onClick={() => onClick(algo.alg_key, algo.isLocked)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(algo.alg_key, algo.isLocked); }}
+      aria-label={`${algo.name} - ${algo.difficulty}`}
+    >
+      {/* Circle node */}
+      <motion.div
+        className={`roadmap-node ${stateClass}`}
+        whileHover={!isLocked ? { scale: 1.12 } : {}}
+        whileTap={!isLocked ? { scale: 0.95 } : {}}
+        animate={
+          isCurrent
+            ? { y: [0, -6, 0] }
+            : {}
+        }
+        transition={
+          isCurrent
+            ? { duration: 2.2, repeat: Infinity, ease: 'easeInOut' }
+            : { duration: 0.2 }
+        }
+      >
+        <div className="roadmap-node__ring" />
+        <div className="roadmap-node__inner">
+          <span className="roadmap-node__icon">
+            {isCompleted ? (
+              <CheckCircle size={26} />
+            ) : isLocked ? (
+              <Lock size={22} />
+            ) : (
+              <PlayCircle size={26} />
+            )}
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Info card */}
+      <div className="roadmap-info">
+        <h3 className="roadmap-info__name">{algo.name}</h3>
+        <div className="roadmap-info__meta">
+          <span className={`roadmap-info__difficulty roadmap-info__difficulty--${difficultyClass}`}>
+            {algo.difficulty}
+          </span>
+          {algo.complexity && (
+            <span className="roadmap-info__complexity">
+              <Star size={11} /> {algo.complexity}
+            </span>
+          )}
+        </div>
+
+        {!isLocked && (
+          <>
+            <div className="roadmap-info__progress-bar">
+              <div
+                className={`roadmap-info__progress-fill ${isCompleted ? 'roadmap-info__progress-fill--done' : 'roadmap-info__progress-fill--active'}`}
+                style={{ width: `${algo.progress}%` }}
+              />
+            </div>
+            <span className="roadmap-info__progress-text">{algo.progress}%</span>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Level divider ──
+function LevelDivider({ title, difficulty }) {
+  const badgeClass =
+    difficulty === 'Easy' ? 'roadmap-level-badge--easy'
+      : difficulty === 'Medium' ? 'roadmap-level-badge--medium'
+        : 'roadmap-level-badge--hard';
+
+  const icon =
+    difficulty === 'Easy' ? <Sparkles size={14} />
+      : difficulty === 'Medium' ? <Star size={14} />
+        : <Trophy size={14} />;
+
+  return (
+    <motion.div
+      className="roadmap-level-divider"
+      initial={{ opacity: 0, scaleX: 0.5 }}
+      animate={{ opacity: 1, scaleX: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+    >
+      <span className={`roadmap-level-badge ${badgeClass}`}>
+        {icon} {title}
+      </span>
+    </motion.div>
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════
 export default function LearningPath() {
-  const { categoryId } = useParams(); 
+  const { categoryId } = useParams();
   const navigate = useNavigate();
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,19 +285,19 @@ export default function LearningPath() {
           const level2 = filteredAlgos.filter(a => a.difficulty === 'Medium');
           const level3 = filteredAlgos.filter(a => a.difficulty === 'Hard');
 
-          let previousCompleted = true; 
+          let previousCompleted = true;
 
           const processLevel = (algos) => {
             return algos.map(algo => {
               const rawProgress = algo.progress || 0;
               const progress = Math.round(rawProgress);
-              
+
               const isLocked = !previousCompleted;
 
               if (progress < 100) {
                 previousCompleted = false;
               } else {
-                previousCompleted = true; 
+                previousCompleted = true;
               }
 
               return { ...algo, isLocked, progress };
@@ -96,19 +308,19 @@ export default function LearningPath() {
             {
               id: "l1",
               title: "Level 1: Nhập môn & Cơ bản",
-              description: "Làm quen với các khái niệm nền tảng và thuật toán đơn giản.",
+              difficulty: "Easy",
               algorithms: processLevel(level1)
             },
             {
               id: "l2",
               title: "Level 2: Trung cấp & Tối ưu",
-              description: "Các thuật toán phức tạp hơn, sử dụng đệ quy hoặc chia để trị.",
+              difficulty: "Medium",
               algorithms: processLevel(level2)
             },
             {
               id: "l3",
               title: "Level 3: Nâng cao & Ứng dụng",
-              description: "Giải quyết các bài toán khó với hiệu suất cao nhất.",
+              difficulty: "Hard",
               algorithms: processLevel(level3)
             }
           ];
@@ -125,141 +337,229 @@ export default function LearningPath() {
     fetchPath();
   }, [categoryId]);
 
+  // Flatten all algorithms for overall stats
+  const allAlgos = useMemo(() => {
+    return levels.flatMap(l => l.algorithms);
+  }, [levels]);
+
+  const completedCount = useMemo(() => {
+    return allAlgos.filter(a => a.progress >= 100).length;
+  }, [allAlgos]);
+
+  const overallProgress = useMemo(() => {
+    return allAlgos.length ? Math.round((completedCount / allAlgos.length) * 100) : 0;
+  }, [completedCount, allAlgos.length]);
+
+  // Mark first non-completed unlocked node as "current", rest as "previously open"
+  const processedLevels = useMemo(() => {
+    let foundCurrent = false;
+    return levels.map(level => ({
+      ...level,
+      algorithms: level.algorithms.map(algo => {
+        const isCompleted = algo.progress >= 100;
+        const isUnlocked = !algo.isLocked;
+        if (!isCompleted && isUnlocked && !foundCurrent) {
+          foundCurrent = true;
+          return { ...algo, _isPreviouslyOpen: false }; // This IS the current node
+        }
+        if (!isCompleted && isUnlocked && foundCurrent) {
+          return { ...algo, _isPreviouslyOpen: true }; // Unlocked but not current
+        }
+        return { ...algo, _isPreviouslyOpen: false };
+      })
+    }));
+  }, [levels]);
+
   const handleNavigate = (algKey, isLocked) => {
     if (isLocked) return;
     navigate(`/lab/${algKey}`);
   };
 
+  // ── Loading state ──
   if (loading) return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center text-slate-400">
+    <div className="roadmap-loading">
+      <span className="button-spinner" />
       Đang tải lộ trình học...
     </div>
   );
 
+  // Keep a running global index for zigzag positioning
+  let globalIndex = 0;
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans flex flex-col">
-      <div className="flex-grow pt-20 pb-20">
-        {/* Header */}
-        <div className="bg-slate-800 border-b border-slate-700 py-8 px-4 relative shadow-xl">
-          <div className="max-w-4xl mx-auto">
-            <button 
-              onClick={() => navigate('/explore')} 
-              className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors"
+    <div className="roadmap-page">
+      {/* Ambient background glows */}
+      <div className="roadmap-ambient roadmap-ambient--one" />
+      <div className="roadmap-ambient roadmap-ambient--two" />
+      <div className="roadmap-ambient roadmap-ambient--three" />
+
+      {/* Floating particles */}
+      <FloatingParticles />
+
+      {/* Header */}
+      <header className="roadmap-header">
+        <button
+          className="roadmap-back"
+          onClick={() => navigate('/explore')}
+        >
+          <ArrowLeft size={18} /> Quay lại Khám phá
+        </button>
+
+        <div className="roadmap-title-row">
+          <div>
+            <motion.h1
+              className="roadmap-title"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              <ArrowLeft size={20} /> Quay lại Khám phá
-            </button>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                  {categoryTitle}
-                </h1>
-                <p className="text-slate-400 mt-2 text-sm">Hoàn thành từng bài học để mở khóa cấp độ tiếp theo.</p>
-              </div>
-              <div className="hidden md:block">
-                 <Trophy size={48} className="text-yellow-500 opacity-80" />
-              </div>
-            </div>
+              {categoryTitle}
+            </motion.h1>
+            <motion.p
+              className="roadmap-subtitle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Hoàn thành từng bài học để mở khóa cấp độ tiếp theo trên con đường chinh phục.
+            </motion.p>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <ProgressRing
+              progress={overallProgress}
+              completed={completedCount}
+              total={allAlgos.length}
+            />
+          </motion.div>
         </div>
+      </header>
 
-        <div className="max-w-4xl mx-auto px-4 py-10 space-y-12">
-          {levels.length === 0 ? (
-            <div className="text-center text-slate-500 py-10">
-              Chưa có bài học nào trong mục này.
-            </div>
-          ) : (
-            levels.map((level, lvlIdx) => (
-              <div key={level.id} className="relative pl-8 md:pl-0">
-                
-                <div className="hidden md:block absolute left-8 top-14 bottom-0 w-0.5 bg-slate-700 -z-10"></div>
+      {/* Main roadmap area */}
+      <div className="roadmap-container">
+        {processedLevels.length === 0 ? (
+          <div className="roadmap-empty">
+            <Trophy size={48} style={{ color: '#67e8f9' }} />
+            <h2>Chưa có bài học nào</h2>
+            <p>Chưa có bài học nào trong mục này. Hãy quay lại sau nhé!</p>
+          </div>
+        ) : (
+          processedLevels.map((level, lvlIdx) => {
+            const levelContent = (
+              <div key={level.id}>
+                {/* Level divider */}
+                <LevelDivider
+                  title={level.title}
+                  difficulty={level.difficulty}
+                />
 
-                <div className="mb-6 relative">
-                   <div className="hidden md:flex absolute -left-10 top-1 w-8 h-8 rounded-full bg-slate-800 border-2 border-blue-500 items-center justify-center font-bold text-sm text-blue-400 z-10">
-                      {lvlIdx + 1}
-                   </div>
-                   <h2 className="text-2xl font-bold text-white">{level.title}</h2>
-                   <p className="text-slate-400 text-sm">{level.description}</p>
-                </div>
+                {/* Nodes */}
+                {level.algorithms.map((algo, algoIdx) => {
+                  const currentGlobalIndex = globalIndex;
+                  globalIndex++;
 
-                <div className="grid gap-4">
-                  {level.algorithms.map((algo) => (
-                    <motion.div
-                      key={algo.id}
-                      whileHover={!algo.isLocked ? { scale: 1.01, x: 4 } : {}}
-                      onClick={() => handleNavigate(algo.alg_key, algo.isLocked)}
-                      className={`
-                        relative flex items-center p-4 rounded-xl border transition-all duration-300 group overflow-hidden
-                        ${algo.isLocked 
-                          ? 'bg-slate-800/40 border-slate-800 opacity-50 cursor-not-allowed grayscale' 
-                          : 'bg-slate-800 border-slate-700 hover:border-blue-500 hover:shadow-lg cursor-pointer'
-                        }
-                      `}
-                    >
-                      {!algo.isLocked && algo.progress > 0 && (
-                          <div 
-                              className="absolute left-0 top-0 bottom-0 bg-blue-500/10 z-0 transition-all duration-1000" 
-                              style={{width: `${algo.progress}%`}}
-                          ></div>
+                  // Determine connector state
+                  const isFirst = lvlIdx === 0 && algoIdx === 0;
+                  const prevAlgo = algoIdx > 0
+                    ? level.algorithms[algoIdx - 1]
+                    : lvlIdx > 0
+                      ? processedLevels[lvlIdx - 1].algorithms[processedLevels[lvlIdx - 1].algorithms.length - 1]
+                      : null;
+
+                  return (
+                    <React.Fragment key={algo.id || algo.alg_key || currentGlobalIndex}>
+                      {/* Connector dots (skip before very first node) */}
+                      {!isFirst && (
+                        <ConnectorDots
+                          prevCompleted={prevAlgo?.progress >= 100}
+                          currentUnlocked={!algo.isLocked}
+                        />
                       )}
 
-                      <div className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center mr-4 flex-shrink-0 bg-slate-900 border border-slate-700">
-                        {algo.progress >= 100 ? (
-                            <CheckCircle size={24} className="text-green-400" />
-                        ) : algo.isLocked ? (
-                            <Lock size={24} className="text-slate-500" />
-                        ) : (
-                            <div className="relative flex items-center justify-center">
-                                <svg className="absolute w-full h-full -rotate-90 scale-125" viewBox="0 0 36 36">
-                                    <path className="text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2" />
-                                    <path className="text-blue-500" strokeDasharray={`${algo.progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2" />
-                                </svg>
-                                <PlayCircle size={20} className="text-blue-400" />
-                            </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0 relative z-10">
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-bold truncate pr-4 group-hover:text-blue-400 transition-colors">
-                              {algo.name}
-                          </h3>
-                          {!algo.isLocked && (
-                              <span className={`text-xs font-bold px-2 py-1 rounded ${algo.progress === 100 ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                  {algo.progress}%
-                              </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
-                          <span className={`px-2 py-0.5 rounded border ${
-                               algo.difficulty === 'Easy' ? 'border-green-800 text-green-500' : 
-                               algo.difficulty === 'Medium' ? 'border-yellow-800 text-yellow-500' : 'border-red-800 text-red-500'
-                          }`}>
-                              {algo.difficulty}
-                          </span>
-                          <span className="flex items-center gap-1">
-                              <Star size={12} className="text-yellow-500"/> {algo.complexity}
-                          </span>
-                        </div>
-                        
-                        {!algo.isLocked && (
-                            <div className="mt-3 w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-1000 ${algo.progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-                                  style={{ width: `${algo.progress}%` }}
-                                ></div>
-                            </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                      {/* The node */}
+                      <RoadmapNode
+                        algo={algo}
+                        index={currentGlobalIndex}
+                        onClick={handleNavigate}
+                      />
+                    </React.Fragment>
+                  );
+                })}
               </div>
-            ))
-          )}
-        </div>
+            );
+
+            return levelContent;
+          })
+        )}
+
+        {/* End trophy */}
+        {processedLevels.length > 0 && (
+          <motion.div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              marginTop: '2.5rem',
+              gap: '0.5rem',
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+          >
+            <ConnectorDots prevCompleted={overallProgress === 100} currentUnlocked={false} />
+            <motion.div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: overallProgress === 100
+                  ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                  : 'linear-gradient(135deg, #1e293b, #0f172a)',
+                border: overallProgress === 100
+                  ? '3px solid #fbbf24'
+                  : '3px solid #334155',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: overallProgress === 100
+                  ? '0 0 30px rgba(251, 191, 36, 0.3)'
+                  : 'none',
+              }}
+              animate={
+                overallProgress === 100
+                  ? { rotate: [0, 10, -10, 0], scale: [1, 1.05, 1] }
+                  : {}
+              }
+              transition={
+                overallProgress === 100
+                  ? { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+                  : {}
+              }
+            >
+              <Trophy
+                size={28}
+                style={{
+                  color: overallProgress === 100 ? '#fff' : '#475569',
+                }}
+              />
+            </motion.div>
+            <span style={{
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: overallProgress === 100 ? '#fbbf24' : '#475569',
+              textAlign: 'center',
+              marginTop: '0.2rem',
+            }}>
+              {overallProgress === 100 ? '🎉 Hoàn thành xuất sắc!' : 'Đích đến'}
+            </span>
+          </motion.div>
+        )}
       </div>
+
       <Footer />
     </div>
   );
