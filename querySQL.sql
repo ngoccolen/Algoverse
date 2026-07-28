@@ -48,11 +48,13 @@ CREATE TABLE user_progress (
     user_id INT,
     algorithm_id INT,
     progress INT,
-    exercises_progress INT,
-    questions_progress INT,
+    theory_progress INT DEFAULT 0,
+    exercises_progress INT DEFAULT 0,
+    questions_progress INT DEFAULT 0,
     last_accessed TIMESTAMP,
     status VARCHAR(50),
     updated_at TIMESTAMP,
+    UNIQUE KEY uq_user_progress (user_id, algorithm_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (algorithm_id) REFERENCES algorithms(id)
 );

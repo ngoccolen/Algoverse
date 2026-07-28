@@ -242,7 +242,7 @@ exports.submitQuestions = async (req, res) => {
     
     await db.query(`
         INSERT INTO user_progress (user_id, algorithm_id, questions_progress) VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE questions_progress = ?
+        ON DUPLICATE KEY UPDATE questions_progress = GREATEST(COALESCE(questions_progress, 0), ?), updated_at = NOW()
     `, [userId, algorithmId, score, score]);
 
     res.json({ success: true, correctCount, total: questions.length, scorePercent: score, details: details });

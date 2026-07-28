@@ -16,6 +16,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import LoginSuccess from "./pages/LoginSuccess";
 import ResetPasswordOTP from "./pages/ResetPasswordOTP";
 import LearningPath from './pages/LearningPath';
+import LearningPathSurvey from './pages/LearningPathSurvey';
+import PersonalizedLearningPath from './pages/PersonalizedLearningPath';
 import LabDetail from './pages/LabDetail'; 
 import AdminDashboard from "./pages/AdminDashboard";
 import { AuthContext } from "./context/AuthContext";
@@ -50,6 +52,8 @@ export default function App() {
 
         <Route path="/practice" element={<PracticePage />} />
         <Route path="/path/:categoryId" element={<LearningPath />} />
+        <Route path="/learning-path/survey" element={<LearningPathSurvey />} />
+        <Route path="/learning-path" element={<PersonalizedLearningPath />} />
         <Route path="/lab/:algKey" element={<LabDetail />} />
         <Route
           path="/practice/:id"

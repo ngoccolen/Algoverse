@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Home, Compass, Code2, Trophy, Users, 
+  Home, Compass, Code2, Trophy, Users, Map,
   Menu, X, ChevronRight, Zap, LogOut, User as UserIcon
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -49,6 +49,7 @@ const Navbar = () => {
   };
 
   const menuItems = [
+    { id: '/learning-path', label: 'Lộ trình AI', icon: Map },
     { id: '/', label: 'Trang chủ', icon: Home },
     { id: '/explore', label: 'Khám phá', icon: Compass },
     { id: '/practice', label: 'Luyện tập', icon: Code2 },

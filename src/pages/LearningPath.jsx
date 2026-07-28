@@ -19,6 +19,28 @@ export default function LearningPath() {
   const [loading, setLoading] = useState(true);
   const [categoryTitle, setCategoryTitle] = useState("");
 
+  const CATEGORY_ALIASES = {
+    sorting: 'Sorting',
+    search: 'Searching',
+    searching: 'Searching',
+    graph: 'Graph',
+    datastruct: 'Data Structure',
+    'data-structure': 'Data Structure',
+    fundamentals: 'Fundamentals',
+    techniques: 'Techniques'
+  };
+
+  const CATEGORY_DISPLAY_NAMES = {
+    sorting: 'Thuật toán Sắp xếp',
+    search: 'Thuật toán Tìm kiếm',
+    searching: 'Thuật toán Tìm kiếm',
+    graph: 'Lý thuyết Đồ thị',
+    datastruct: 'Cấu trúc Dữ liệu',
+    'data-structure': 'Cấu trúc Dữ liệu',
+    fundamentals: 'Nền tảng Lập trình',
+    techniques: 'Kỹ thuật giải bài'
+  };
+
   const CATEGORY_NAMES = {
     sorting: "Thuật toán Sắp xếp",
     search: "Thuật toán Tìm kiếm",
@@ -40,11 +62,12 @@ export default function LearningPath() {
         if (data.success) {
           const allAlgos = data.data;
 
+          const canonicalCategory = CATEGORY_ALIASES[categoryId.toLowerCase()] || categoryId;
           const filteredAlgos = allAlgos.filter(
-            a => a.category && a.category.toLowerCase() === categoryId.toLowerCase()
+            a => a.category && a.category.toLowerCase() === canonicalCategory.toLowerCase()
           );
 
-          setCategoryTitle(CATEGORY_NAMES[categoryId] || categoryId);
+          setCategoryTitle(CATEGORY_DISPLAY_NAMES[categoryId.toLowerCase()] || CATEGORY_NAMES[categoryId] || categoryId);
 
           const level1 = filteredAlgos.filter(a => a.difficulty === 'Easy');
           const level2 = filteredAlgos.filter(a => a.difficulty === 'Medium');

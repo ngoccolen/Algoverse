@@ -74,7 +74,11 @@ exports.submitExercise = async (req, res) => {
 
     if (percent === 100) {
       await db.query(
-        "UPDATE UserProgress SET exercises_progress = 100 WHERE user_id=? AND algorithm_id=?",
+        `INSERT INTO user_progress (user_id, algorithm_id, exercises_progress, updated_at)
+         VALUES (?, ?, 100, NOW())
+         ON DUPLICATE KEY UPDATE
+           exercises_progress = GREATEST(COALESCE(exercises_progress, 0), 100),
+           updated_at = NOW()`,
         [userId, algorithmId]
       );
     }

@@ -50,11 +50,12 @@ exports.submitQuestions = async (req, res) => {
     const scorePercent = Math.round((correct / questions.length) * 100);
 
     await db.query(
-      `UPDATE UserProgress 
-       SET questions_progress = GREATEST(questions_progress, ?), 
-           total_progress = (theory_progress + questions_progress + exercises_progress)/3 
-       WHERE user_id = ? AND algorithm_id = ?`,
-      [scorePercent, userId, algorithmId]
+      `INSERT INTO user_progress (user_id, algorithm_id, questions_progress, updated_at)
+       VALUES (?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE
+         questions_progress = GREATEST(COALESCE(questions_progress, 0), VALUES(questions_progress)),
+         updated_at = NOW()`,
+      [userId, algorithmId, scorePercent]
     );
 
     res.json({

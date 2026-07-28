@@ -41,6 +41,17 @@ You don't have to ever use `eject`. The curated feature set is suitable for smal
 
 ## Learn More
 
+## Personalized learning path
+
+The personalized learning path is available at `/learning-path`. It uses a seven-question survey, a deterministic prerequisite-aware planner, and optional Gemini enrichment.
+
+Before using the saved path for authenticated users, run these SQL files against the backend database:
+
+1. `progress_schema_patch.sql` for existing databases.
+2. `learning_path_schema.sql` for the learning profile/path tables.
+
+Guest users can generate a path without database persistence; it is stored in browser local storage.
+
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
